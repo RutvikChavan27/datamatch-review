@@ -1,0 +1,60 @@
+name: Mirror to documentmatch
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Debug - Test API access to target repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.CLONE_PAT }}
+        run: |
+          echo "Testing API access to target repository..."
+          
+          # Test if we can access the target repo via API
+          response=$(curl -s -w "%{http_code}" -H "Authorization: token $GITHUB_TOKEN" \
+                     -H "Accept: application/vnd.github.v3+json" \
+                     https://api.github.com/repos/devnco-technologies-llp/documentmatch)
+          
+          echo "API Response: $response"
+          
+          if [[ "$response" == *"200" ]]; then
+            echo "✅ API access successful - repository exists and token can access it"
+          elif [[ "$response" == *"404" ]]; then
+            echo "❌ Repository not found or token doesn't have access"
+            echo "Possible issues:"
+            echo "1. Repository name is wrong"
+            echo "2. Token doesn't have access to this repository"
+            echo "3. Token doesn't have correct permissions"
+          else
+            echo "❌ Unexpected response: $response"
+          fi
+
+      - name: Debug - List accessible repositories
+        env:
+          GITHUB_TOKEN: ${{ secrets.CLONE_PAT }}
+        run: |
+          echo "Listing repositories this token can access..."
+          curl -s -H "Authorization: token $GITHUB_TOKEN" \
+               -H "Accept: application/vnd.github.v3+json" \
+               "https://api.github.com/user/repos?visibility=all&affiliation=owner,collaborator,organization_member" \
+               | grep -E '"name"|"full_name"' | head -20
+
+      - name: Mirror to target repository (if tests pass)
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          
+          TARGET_URL="https://x-access-token:${{ secrets.CLONE_PAT }}@github.com/devnco-technologies-llp/documentmatch.git"
+          
+          echo "Attempting to push to target repository..."
+          git push --force "${TARGET_URL}" HEAD:main

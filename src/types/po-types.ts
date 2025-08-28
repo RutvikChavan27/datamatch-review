@@ -1,0 +1,78 @@
+
+// src/types/po-types.ts
+export type POStatus = 'submitted' | 'approved' | 'rejected' | 'query' | 'discussion';
+
+export interface LineItem {
+  id: string;
+  itemCode: string;
+  description: string;
+  quantity: number;
+  uom?: string; // Unit of Measure
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  reference: string;
+  title: string;
+  vendor: string;
+  department: string;
+  requestor: string;
+  totalAmount: number;
+  status: POStatus;
+  lineItems: LineItem[];
+  createdAt: Date;
+  updatedAt: Date;
+  expectedDeliveryDate?: Date | null;
+  deliveryAddress?: string;
+  paymentTerms?: string;
+  notes?: string;
+  clarificationRequest?: ClarificationRequest;
+  discussion?: Discussion;
+}
+
+export interface POApprovalStage {
+  id: string;
+  name: string;
+  approver: string;
+  status: 'pending' | 'approved' | 'rejected' | 'query';
+  timestamp?: Date;
+  comments?: string;
+}
+
+export interface POApprovalFlow {
+  id: string;
+  poId: string;
+  currentStage: number;
+  stages: POApprovalStage[];
+}
+
+export interface ClarificationRequest {
+  id: string;
+  question?: string;
+  askedBy?: string;
+  askedAt?: Date;
+  requestedBy?: string;
+  requestedAt?: Date;
+  response?: string;
+  respondedAt?: Date;
+  isResolved?: boolean;
+}
+
+export interface DiscussionMessage {
+  id: string;
+  message: string;
+  author: string;
+  timestamp: Date;
+  type: 'user' | 'system';
+}
+
+export interface Discussion {
+  id: string;
+  poId: string;
+  messages: DiscussionMessage[];
+  isActive: boolean;
+  startedAt: Date;
+  lastActivity: Date;
+}

@@ -1,0 +1,216 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import POTable from "@/components/po-request/POTable";
+import { mockPurchaseOrders } from "@/data/mock-data";
+import {
+  Search,
+  Plus,
+  Filter,
+  Calendar,
+  DollarSign,
+} from "lucide-react";
+import { POStatus } from "@/types/po-types";
+
+const PORequestDashboard = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentTab, setCurrentTab] = useState<"all" | POStatus>("all");
+  const [hasMinimizedPO, setHasMinimizedPO] = useState(false);
+
+  // Check if there's a minimized PO when the component mounts or location changes
+  useEffect(() => {
+    if (location.state && location.state.minimizedPO) {
+      setHasMinimizedPO(true);
+    }
+  }, [location]);
+
+  const handleCreateNew = () => {
+    navigate("/po-requests/create");
+  };
+
+  const handleRestorePO = () => {
+    navigate("/po-requests/create");
+  };
+
+  // Filter POs based on search query and selected tab
+  const filteredPOs = mockPurchaseOrders.filter((po) => {
+    const matchesSearch =
+      po.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      po.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      po.vendor.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (currentTab === "all") {
+      return matchesSearch;
+    }
+
+    return matchesSearch && po.status === currentTab;
+  });
+
+  // Calculate counts for each tab
+  const allCount = mockPurchaseOrders.length;
+  const inReviewCount = mockPurchaseOrders.filter(
+    (po) => po.status === "submitted"
+  ).length;
+  const approvedCount = mockPurchaseOrders.filter(
+    (po) => po.status === "approved"
+  ).length;
+  const rejectedCount = mockPurchaseOrders.filter(
+    (po) => po.status === "rejected"
+  ).length;
+  const discussionCount = mockPurchaseOrders.filter(
+    (po) => po.status === "discussion"
+  ).length;
+
+  // Calculate total value of filtered POs
+  const totalValue = filteredPOs.reduce(
+    (sum, po) => sum + po.totalAmount,
+    0
+  );
+
+  // Format currency helper function
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
+
+  // Debug log to see the statuses of POs
+  console.log(
+    "All PO statuses:",
+    mockPurchaseOrders.map((po) => po.status)
+  );
+  console.log(
+    "Discussion POs:",
+    mockPurchaseOrders.filter((po) => po.status === "discussion")
+  );
+  console.log("Current tab:", currentTab);
+  console.log("Filtered POs:", filteredPOs);
+
+  return (
+    <div className="space-y-2 px-4 pt-4 pb-2 max-w-full overflow-x-hidden">
+      {/* Clean Header with Statistics */}
+      <div className="flex items-center justify-between py-1">
+        <div>
+          <h1 className="text-xl font-semibold text-foreground font-inter">
+            PO Requests
+          </h1>
+        </div>
+        <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-4 text-sm text-muted-foreground font-roboto">
+            <div className="flex items-center space-x-1">
+              <Calendar className="w-4 h-4" />
+              <span>This Month</span>
+              <span className="font-semibold text-foreground">{allCount}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <DollarSign className="w-4 h-4" />
+              <span>Total Value</span>
+              <span className="font-semibold text-foreground">
+                {formatCurrency(totalValue)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Section with Document Matching UI Styling */}
+      <div className="flex items-center justify-between mt-4">
+        {/* Left Side - Modern Tab Filters */}
+        <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-full">
+          {[
+            { key: 'all', label: 'All Requests', count: allCount },
+            { key: 'submitted', label: 'In Review', count: inReviewCount },
+            { key: 'approved', label: 'Approved', count: approvedCount },
+            { key: 'rejected', label: 'Rejected', count: rejectedCount },
+            { key: 'discussion', label: 'Ready For Review', count: discussionCount }
+          ].map(tab => (
+            <button
+              key={tab.key}
+              className={`
+                px-4 py-2 flex items-center gap-2 rounded-full text-sm font-semibold transition-all duration-200 border border-b-2
+                ${currentTab === tab.key
+                  ? "text-gray-900 shadow-lg shadow-black/10 border-[#95A3C2]"
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-200 border-transparent"}
+              `}
+              style={currentTab === tab.key ? {
+                background: 'linear-gradient(180deg, rgba(255, 255, 255, 1) 8.65%, rgba(255, 255, 255, 1) 48.88%, rgba(181, 218, 241, 1) 100%)',
+                borderRadius: '19.5px',
+                mixBlendMode: 'darken'
+              } : {}}
+              onClick={() => setCurrentTab(tab.key as typeof currentTab)}
+            >
+              <span>{tab.label}</span>
+              <div className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                currentTab === tab.key ? (
+                  tab.key === 'all' ? 'bg-slate-600 text-white' :
+                  tab.key === 'submitted' ? 'bg-blue-600 text-white' :
+                  tab.key === 'approved' ? 'bg-emerald-600 text-white' :
+                  tab.key === 'rejected' ? 'bg-rose-600 text-white' :
+                  tab.key === 'discussion' ? 'bg-blue-600 text-white' : 'bg-slate-600 text-white'
+                ) : (
+                  tab.key === 'all' ? 'bg-gray-100 text-gray-700' :
+                  tab.key === 'submitted' ? 'bg-blue-100 text-gray-700' :
+                  tab.key === 'approved' ? 'bg-green-100 text-gray-700' :
+                  tab.key === 'rejected' ? 'bg-red-100 text-gray-700' :
+                  tab.key === 'discussion' ? 'bg-blue-100 text-gray-700' : 'bg-gray-100 text-gray-700'
+                )
+              }`}>
+                {tab.count}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Right Side - Search and Filter */}
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Filter 
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 cursor-pointer hover:text-foreground" 
+            />
+            <Input
+              placeholder="Search vendor, PO number..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10 h-9 w-64"
+            />
+          </div>
+          
+          <Button onClick={handleCreateNew}>
+            <Plus className="w-4 h-4 mr-2" />
+            New PO Request
+          </Button>
+        </div>
+      </div>
+      
+      {/* POs Table */}
+      <div className="mt-2">
+        <POTable purchaseOrders={filteredPOs} />
+      </div>
+
+      {/* Minimized PO Tab */}
+      {hasMinimizedPO && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <Button
+            onClick={handleRestorePO}
+            className="bg-white shadow-md border border-gray-200 text-gray-800 hover:bg-gray-50 py-2 px-4 rounded-md flex items-center"
+          >
+            <div className="mr-2">
+              <div className="text-left font-medium text-sm">
+                Resume PO Creation
+              </div>
+            </div>
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default PORequestDashboard;
