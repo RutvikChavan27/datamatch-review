@@ -640,54 +640,86 @@ const PODetails: React.FC = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-muted/50 transition-colors">
-                        <TableHead 
+                        <TableHead
                           className="w-[10%] min-w-[80px] font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                          style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                          style={{
+                            backgroundColor: "#DFE7F3",
+                            borderBottomColor: "#c9d1e0",
+                            borderTopColor: "#c9d1e0",
+                          }}
                         >
                           Item Code
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="w-[35%] min-w-[200px] font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                          style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                          style={{
+                            backgroundColor: "#DFE7F3",
+                            borderBottomColor: "#c9d1e0",
+                            borderTopColor: "#c9d1e0",
+                          }}
                         >
                           <div className="truncate" title="Description">
                             Description
                           </div>
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="w-[10%] min-w-[80px] text-right font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                          style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                          style={{
+                            backgroundColor: "#DFE7F3",
+                            borderBottomColor: "#c9d1e0",
+                            borderTopColor: "#c9d1e0",
+                          }}
                         >
                           Quantity
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="w-[8%] min-w-[80px] text-right font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                          style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                          style={{
+                            backgroundColor: "#DFE7F3",
+                            borderBottomColor: "#c9d1e0",
+                            borderTopColor: "#c9d1e0",
+                          }}
                         >
                           UoM
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="w-[12%] min-w-[100px] text-right font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                          style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                          style={{
+                            backgroundColor: "#DFE7F3",
+                            borderBottomColor: "#c9d1e0",
+                            borderTopColor: "#c9d1e0",
+                          }}
                         >
                           Unit Price
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="w-[12%] min-w-[100px] text-right font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                          style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                          style={{
+                            backgroundColor: "#DFE7F3",
+                            borderBottomColor: "#c9d1e0",
+                            borderTopColor: "#c9d1e0",
+                          }}
                         >
                           Total
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="w-[8%] min-w-[80px] text-center font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                          style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                          style={{
+                            backgroundColor: "#DFE7F3",
+                            borderBottomColor: "#c9d1e0",
+                            borderTopColor: "#c9d1e0",
+                          }}
                         >
                           Status
                         </TableHead>
                         {po.status === "discussion" && (
-                          <TableHead 
+                          <TableHead
                             className="w-[12%] min-w-[100px] text-left font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                            style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                            style={{
+                              backgroundColor: "#DFE7F3",
+                              borderBottomColor: "#c9d1e0",
+                              borderTopColor: "#c9d1e0",
+                            }}
                           >
                             Actions
                           </TableHead>
@@ -696,7 +728,10 @@ const PODetails: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {po.lineItems.map((item) => (
-                        <TableRow key={item.id} className="h-10 hover:bg-muted/50 transition-colors">
+                        <TableRow
+                          key={item.id}
+                          className="h-10 hover:bg-muted/50 transition-colors"
+                        >
                           <TableCell className="font-fira-code text-sm font-medium py-2 border-r-0 text-foreground truncate px-4">
                             <div className="truncate" title={item.itemCode}>
                               {item.itemCode}
@@ -790,11 +825,11 @@ const PODetails: React.FC = () => {
                       <TableRow className="bg-muted/20">
                         <TableCell
                           colSpan={5}
-                          className="text-right font-medium"
+                          className="text-right font-medium border-r-0"
                         >
                           Total
                         </TableCell>
-                        <TableCell className="text-right font-bold">
+                        <TableCell className="text-right font-bold border-r-0">
                           {formatCurrency(po.totalAmount)}
                         </TableCell>
                         <TableCell></TableCell>
@@ -868,21 +903,33 @@ const PODetails: React.FC = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-muted/50 transition-colors">
-                        <TableHead 
+                        <TableHead
                           className="w-[12%] min-w-[140px] font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                          style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                          style={{
+                            backgroundColor: "#DFE7F3",
+                            borderBottomColor: "#c9d1e0",
+                            borderTopColor: "#c9d1e0",
+                          }}
                         >
                           Date & Time
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="w-[15%] min-w-[150px] font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                          style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                          style={{
+                            backgroundColor: "#DFE7F3",
+                            borderBottomColor: "#c9d1e0",
+                            borderTopColor: "#c9d1e0",
+                          }}
                         >
                           Action
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="w-[73%] min-w-[200px] font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                          style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                          style={{
+                            backgroundColor: "#DFE7F3",
+                            borderBottomColor: "#c9d1e0",
+                            borderTopColor: "#c9d1e0",
+                          }}
                         >
                           <div className="truncate" title="Description">
                             Description
@@ -892,7 +939,10 @@ const PODetails: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {recentActivity.map((activity) => (
-                        <TableRow key={activity.id} className="h-10 hover:bg-muted/50 transition-colors">
+                        <TableRow
+                          key={activity.id}
+                          className="h-10 hover:bg-muted/50 transition-colors"
+                        >
                           <TableCell className="font-roboto text-sm py-2 border-r-0 text-foreground px-4">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-3 w-3 text-gray-400" />
@@ -954,35 +1004,55 @@ const PODetails: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-muted/50 transition-colors">
-                      <TableHead 
+                      <TableHead
                         className="w-[40%] min-w-[200px] font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                        style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                        style={{
+                          backgroundColor: "#DFE7F3",
+                          borderBottomColor: "#c9d1e0",
+                          borderTopColor: "#c9d1e0",
+                        }}
                       >
                         <div className="truncate" title="Document Name">
                           Document Name
                         </div>
                       </TableHead>
-                      <TableHead 
+                      <TableHead
                         className="w-[8%] min-w-[80px] font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                        style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                        style={{
+                          backgroundColor: "#DFE7F3",
+                          borderBottomColor: "#c9d1e0",
+                          borderTopColor: "#c9d1e0",
+                        }}
                       >
                         Size
                       </TableHead>
-                      <TableHead 
+                      <TableHead
                         className="w-[15%] min-w-[150px] font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                        style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                        style={{
+                          backgroundColor: "#DFE7F3",
+                          borderBottomColor: "#c9d1e0",
+                          borderTopColor: "#c9d1e0",
+                        }}
                       >
                         Added by
                       </TableHead>
-                      <TableHead 
+                      <TableHead
                         className="w-[12%] min-w-[140px] font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                        style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                        style={{
+                          backgroundColor: "#DFE7F3",
+                          borderBottomColor: "#c9d1e0",
+                          borderTopColor: "#c9d1e0",
+                        }}
                       >
                         Date & Time
                       </TableHead>
-                      <TableHead 
+                      <TableHead
                         className="w-[12%] min-w-[100px] font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4"
-                        style={{ backgroundColor: '#DFE7F3', borderBottomColor: '#c9d1e0', borderTopColor: '#c9d1e0' }}
+                        style={{
+                          backgroundColor: "#DFE7F3",
+                          borderBottomColor: "#c9d1e0",
+                          borderTopColor: "#c9d1e0",
+                        }}
                       >
                         Action
                       </TableHead>
@@ -990,7 +1060,10 @@ const PODetails: React.FC = () => {
                   </TableHeader>
                   <TableBody>
                     {documents.map((doc, index) => (
-                      <TableRow key={doc.id} className="h-10 hover:bg-muted/50 transition-colors">
+                      <TableRow
+                        key={doc.id}
+                        className="h-10 hover:bg-muted/50 transition-colors"
+                      >
                         <TableCell className="font-medium py-2 border-r-0 text-sm text-foreground px-4">
                           <div className="flex items-center gap-3">
                             {getDocumentIcon(doc.type)}
@@ -1001,7 +1074,9 @@ const PODetails: React.FC = () => {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="py-2 border-r-0 text-sm text-foreground px-4">{Math.round(doc.size / 1024)} KB</TableCell>
+                        <TableCell className="py-2 border-r-0 text-sm text-foreground px-4">
+                          {Math.round(doc.size / 1024)} KB
+                        </TableCell>
                         <TableCell className="py-2 border-r-0 text-sm text-foreground px-4">
                           <div className="flex items-center gap-1">
                             <User className="h-3 w-3 text-gray-400" />
