@@ -127,7 +127,7 @@ export const AllDocsTab: React.FC = () => {
     <div className="flex h-full overflow-hidden">
       {/* Left Panel - width adjusted to card width */}
       <div className="w-80 bg-background flex flex-col h-full">
-        <div className="p-6 space-y-6 overflow-y-auto" style={{ height: 'calc(100vh - 120px)', scrollbarGutter: 'stable', scrollbarWidth: 'none' }} onMouseEnter={(e) => e.currentTarget.style.scrollbarWidth = 'thin'} onMouseLeave={(e) => e.currentTarget.style.scrollbarWidth = 'none'}>
+        <div className="p-6 space-y-6 overflow-y-auto scrollbar-container" style={{ height: 'calc(100vh - 120px)' }}>
         {/* 4 Issues Group */}
         <Collapsible open={issuesOpen} onOpenChange={setIssuesOpen}>
           <CollapsibleTrigger className="flex items-center justify-between w-full text-left pr-0">

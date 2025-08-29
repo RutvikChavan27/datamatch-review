@@ -198,6 +198,10 @@
   font-family: 'Fira Code', monospace;
 }
 
+.font-exo {
+  font-family: 'Exo 2', sans-serif;
+}
+
 /* Lovable Component System */
 @layer components {
   /* Typography Hierarchy - Simplified */
@@ -1580,4 +1584,44 @@
   91% { opacity: 1; }
   94% { opacity: 0.7; }
   97%, 100% { opacity: 1; } /* back to normal */
+}
+
+/* Scrollbar container - stable width with hover-visible scrollbar */
+.scrollbar-container {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s ease;
+}
+
+.scrollbar-container:hover {
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+/* WebKit scrollbar styles */
+.scrollbar-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-container::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.scrollbar-container::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.scrollbar-container:hover::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.scrollbar-container:hover::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+}
+
+.scrollbar-container:hover::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
