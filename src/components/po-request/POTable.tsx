@@ -68,6 +68,12 @@ const POTable: React.FC<POTableProps> = ({
     direction: "asc" | "desc";
   } | null>(null);
   const [hoveredColumn, setHoveredColumn] = useState<string | null>(null);
+  const [headerScrollRef, setHeaderScrollRef] = useState<HTMLDivElement | null>(
+    null
+  );
+  const [bodyScrollRef, setBodyScrollRef] = useState<HTMLDivElement | null>(
+    null
+  );
 
   // Sort POs with custom logic
   const sortedPOs = [...purchaseOrders].sort((a, b) => {
@@ -159,6 +165,19 @@ const POTable: React.FC<POTableProps> = ({
     }
   };
 
+  // Handle scroll synchronization between header and body
+  const handleHeaderScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (bodyScrollRef) {
+      bodyScrollRef.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
+
+  const handleBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (headerScrollRef) {
+      headerScrollRef.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
+
   // Function to check if PO has unresolved clarification request
   const hasUnreadMessages = (po: PurchaseOrder) => {
     // Check if PO has a clarification request that hasn't been responded to
@@ -225,138 +244,159 @@ const POTable: React.FC<POTableProps> = ({
     <TooltipProvider>
       <div className="mt-2 shadow-lg shadow-black/5">
         <Card className="overflow-hidden">
+          {/* Sticky Header */}
+          <div className="sticky top-0 z-20 border-b border-border">
+            <div
+              ref={setHeaderScrollRef}
+              className="overflow-x-auto overflow-y-hidden scrollbar-hide"
+              onScroll={handleHeaderScroll}
+            >
+              <Table
+                className="min-w-max"
+                style={{ tableLayout: "fixed", minWidth: "1420px" }}
+              >
+                <TableHeader>
+                  <TableRow className="bg-muted/50 border-b border-border hover:bg-muted/50">
+                    <TableHead
+                      className="font-semibold w-[100px] border-r-0 text-sm text-foreground h-12 border-b border-t"
+                      style={{
+                        backgroundColor: "#DFE7F3",
+                        borderBottomColor: "#c9d1e0",
+                        borderTopColor: "#c9d1e0",
+                      }}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Reference</span>
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="w-[180px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
+                      style={{
+                        backgroundColor: "#DFE7F3",
+                        borderBottomColor: "#c9d1e0",
+                        borderTopColor: "#c9d1e0",
+                      }}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Request Title</span>
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="w-[120px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
+                      style={{
+                        backgroundColor: "#DFE7F3",
+                        borderBottomColor: "#c9d1e0",
+                        borderTopColor: "#c9d1e0",
+                      }}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Status</span>
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="w-[160px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
+                      style={{
+                        backgroundColor: "#DFE7F3",
+                        borderBottomColor: "#c9d1e0",
+                        borderTopColor: "#c9d1e0",
+                      }}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Vendor</span>
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="w-[100px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
+                      style={{
+                        backgroundColor: "#DFE7F3",
+                        borderBottomColor: "#c9d1e0",
+                        borderTopColor: "#c9d1e0",
+                      }}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Department</span>
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="w-[150px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
+                      style={{
+                        backgroundColor: "#DFE7F3",
+                        borderBottomColor: "#c9d1e0",
+                        borderTopColor: "#c9d1e0",
+                      }}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Requestor</span>
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="w-[120px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
+                      style={{
+                        backgroundColor: "#DFE7F3",
+                        borderBottomColor: "#c9d1e0",
+                        borderTopColor: "#c9d1e0",
+                      }}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Created</span>
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="w-[80px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
+                      style={{
+                        backgroundColor: "#DFE7F3",
+                        borderBottomColor: "#c9d1e0",
+                        borderTopColor: "#c9d1e0",
+                      }}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Items</span>
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="w-[120px] text-right font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
+                      style={{
+                        backgroundColor: "#DFE7F3",
+                        borderBottomColor: "#c9d1e0",
+                        borderTopColor: "#c9d1e0",
+                      }}
+                    >
+                      <div className="flex items-center justify-end space-x-1">
+                        <span>Amount</span>
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="w-[140px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
+                      style={{
+                        backgroundColor: "#DFE7F3",
+                        borderBottomColor: "#c9d1e0",
+                        borderTopColor: "#c9d1e0",
+                      }}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Actions</span>
+                      </div>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+              </Table>
+            </div>
+          </div>
+
+          {/* Scrollable Body */}
           <div
-            className="overflow-y-auto"
+            ref={setBodyScrollRef}
+            className="overflow-auto scrollbar-container bg-white"
             style={{
-              maxHeight: `calc(100vh - 320px)`,
-              height: currentPOs.length > 15 ? `calc(100vh - 320px)` : "auto",
+              height: `calc(100vh - 380px)`,
+              scrollBehavior: "smooth",
             }}
+            onScroll={handleBodyScroll}
           >
-            <Table className="min-w-full" style={{ tableLayout: "fixed" }}>
-              <TableHeader>
-                <TableRow className="hover:bg-muted/50 transition-colors">
-                  <TableHead
-                    className="font-semibold w-[100px] border-r-0 text-sm text-foreground h-12 border-b border-t"
-                    style={{
-                      backgroundColor: "#DFE7F3",
-                      borderBottomColor: "#c9d1e0",
-                      borderTopColor: "#c9d1e0",
-                    }}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Reference</span>
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="w-[180px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
-                    style={{
-                      backgroundColor: "#DFE7F3",
-                      borderBottomColor: "#c9d1e0",
-                      borderTopColor: "#c9d1e0",
-                    }}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Request Title</span>
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="w-[120px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
-                    style={{
-                      backgroundColor: "#DFE7F3",
-                      borderBottomColor: "#c9d1e0",
-                      borderTopColor: "#c9d1e0",
-                    }}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Status</span>
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="w-[160px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
-                    style={{
-                      backgroundColor: "#DFE7F3",
-                      borderBottomColor: "#c9d1e0",
-                      borderTopColor: "#c9d1e0",
-                    }}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Vendor</span>
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="w-[100px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
-                    style={{
-                      backgroundColor: "#DFE7F3",
-                      borderBottomColor: "#c9d1e0",
-                      borderTopColor: "#c9d1e0",
-                    }}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Department</span>
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="w-[150px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
-                    style={{
-                      backgroundColor: "#DFE7F3",
-                      borderBottomColor: "#c9d1e0",
-                      borderTopColor: "#c9d1e0",
-                    }}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Requestor</span>
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="w-[120px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
-                    style={{
-                      backgroundColor: "#DFE7F3",
-                      borderBottomColor: "#c9d1e0",
-                      borderTopColor: "#c9d1e0",
-                    }}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Created</span>
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="w-[80px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
-                    style={{
-                      backgroundColor: "#DFE7F3",
-                      borderBottomColor: "#c9d1e0",
-                      borderTopColor: "#c9d1e0",
-                    }}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Items</span>
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="w-[120px] text-right font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
-                    style={{
-                      backgroundColor: "#DFE7F3",
-                      borderBottomColor: "#c9d1e0",
-                      borderTopColor: "#c9d1e0",
-                    }}
-                  >
-                    <div className="flex items-center justify-end space-x-1">
-                      <span>Amount</span>
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="w-[140px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t"
-                    style={{
-                      backgroundColor: "#DFE7F3",
-                      borderBottomColor: "#c9d1e0",
-                      borderTopColor: "#c9d1e0",
-                    }}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Actions</span>
-                    </div>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
+            <Table
+              className="min-w-max"
+              style={{ tableLayout: "fixed", minWidth: "1420px" }}
+            >
               <TableBody>
                 {currentPOs.map((po) => (
                   <TableRow
