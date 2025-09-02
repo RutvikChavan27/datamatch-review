@@ -49,7 +49,7 @@ export const CreateWorkflowDialog: React.FC<CreateWorkflowDialogProps> = ({
                   <p className="card-description mb-3">
                     Quick 3-step routing for everyday tasks
                   </p>
-                  <div className="flex items-center gap-2 text-caption">
+                  <div className="flex flex-row items-center gap-2 text-caption">
                     <Clock className="w-3 h-3" />
                     <span>5 minutes setup</span>
                   </div>
@@ -82,7 +82,7 @@ export const CreateWorkflowDialog: React.FC<CreateWorkflowDialogProps> = ({
                 </div>
               </div>
 
-              <Button variant="primary" className="w-full">
+              <Button className="button-primary w-full">
                 Create Simple Workflow
               </Button>
             </div>

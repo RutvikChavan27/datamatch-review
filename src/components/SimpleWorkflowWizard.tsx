@@ -1914,9 +1914,6 @@ export const SimpleWorkflowWizard: React.FC<SimpleWorkflowWizardProps> = ({
                         {reviewer.type === "internal" && (
                           <div className="space-y-3">
                             <div>
-                              <label className="block text-sm font-medium text-foreground mb-1">
-                                Select Internal User
-                              </label>
                               <div className="space-y-2">
                                 <label className="block text-sm font-medium text-foreground">
                                   Select Internal User{" "}
@@ -1963,7 +1960,7 @@ export const SimpleWorkflowWizard: React.FC<SimpleWorkflowWizardProps> = ({
                         {reviewer.type === "external" && (
                           <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-3">
-                              <div className="field">
+                              <div className="simple-field-trigger-card">
                                 <div className="generic-input-label">
                                   <div className="label">Full Name</div>
                                   <div className="mandatory-mark">
@@ -1993,7 +1990,7 @@ export const SimpleWorkflowWizard: React.FC<SimpleWorkflowWizardProps> = ({
                                   </div>
                                 </div>
                               </div>
-                              <div className="field">
+                              <div className="simple-field-trigger-card">
                                 <div className="generic-input-label">
                                   <div className="label">Email Address</div>
                                   <div className="mandatory-mark">
@@ -2024,7 +2021,7 @@ export const SimpleWorkflowWizard: React.FC<SimpleWorkflowWizardProps> = ({
                                 </div>
                               </div>
                             </div>
-                            <div className="field">
+                            <div className="simple-field-trigger-card">
                               <div className="generic-input-label">
                                 <div className="label">Cell Phone Number</div>
                                 <div className="mandatory-mark">
@@ -2111,9 +2108,6 @@ export const SimpleWorkflowWizard: React.FC<SimpleWorkflowWizardProps> = ({
                         {reviewer.type === "group" && (
                           <div className="space-y-3">
                             <div>
-                              <label className="block text-sm font-medium text-foreground mb-1">
-                                Select Group/Department
-                              </label>
                               <div className="space-y-2">
                                 <label className="block text-sm font-medium text-foreground">
                                   Select Group/Department{" "}

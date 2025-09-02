@@ -122,9 +122,8 @@ export const WorkflowTypeSelection: React.FC<WorkflowTypeSelectionProps> = ({
             </div>
 
             <Button 
-              variant="secondary"
               size="lg"
-              className="w-full gap-2 font-roboto font-semibold"
+              className="button-primary w-full gap-2 font-roboto font-semibold"
             >
               <Settings className="w-4 h-4" />
               Create Advanced Workflow

@@ -45,6 +45,7 @@ interface Workflow {
   status: "Active" | "Inactive";
   actions: number;
   created: string;
+  type: "Simple Workflow" | "Advance Workflow";
 }
 
 const workflowsData: Workflow[] = [
@@ -56,6 +57,7 @@ const workflowsData: Workflow[] = [
     status: "Inactive",
     actions: 4,
     created: "Dec 28, 2024",
+    type: "Advance Workflow",
   },
   {
     id: "2",
@@ -66,6 +68,7 @@ const workflowsData: Workflow[] = [
     status: "Active",
     actions: 3,
     created: "Dec 28, 2024",
+    type: "Simple Workflow",
   },
   {
     id: "3",
@@ -76,6 +79,7 @@ const workflowsData: Workflow[] = [
     status: "Active",
     actions: 4,
     created: "Dec 28, 2024",
+    type: "Advance Workflow",
   },
   {
     id: "4",
@@ -85,6 +89,7 @@ const workflowsData: Workflow[] = [
     status: "Active",
     actions: 3,
     created: "Dec 28, 2024",
+    type: "Simple Workflow",
   },
   {
     id: "5",
@@ -94,6 +99,7 @@ const workflowsData: Workflow[] = [
     status: "Inactive",
     actions: 1,
     created: "Dec 28, 2024",
+    type: "Simple Workflow",
   },
   {
     id: "6",
@@ -104,6 +110,7 @@ const workflowsData: Workflow[] = [
     status: "Active",
     actions: 2,
     created: "Dec 27, 2024",
+    type: "Simple Workflow",
   },
   {
     id: "7",
@@ -113,6 +120,7 @@ const workflowsData: Workflow[] = [
     status: "Inactive",
     actions: 2,
     created: "Dec 27, 2024",
+    type: "Simple Workflow",
   },
   {
     id: "8",
@@ -123,6 +131,7 @@ const workflowsData: Workflow[] = [
     status: "Active",
     actions: 3,
     created: "Dec 27, 2024",
+    type: "Advance Workflow",
   },
   {
     id: "9",
@@ -133,6 +142,7 @@ const workflowsData: Workflow[] = [
     status: "Inactive",
     actions: 4,
     created: "Dec 26, 2024",
+    type: "Advance Workflow",
   },
   {
     id: "10",
@@ -143,6 +153,7 @@ const workflowsData: Workflow[] = [
     status: "Active",
     actions: 2,
     created: "Dec 26, 2024",
+    type: "Simple Workflow",
   },
   {
     id: "11",
@@ -152,6 +163,7 @@ const workflowsData: Workflow[] = [
     status: "Active",
     actions: 2,
     created: "Dec 26, 2024",
+    type: "Advance Workflow",
   },
   {
     id: "12",
@@ -162,6 +174,7 @@ const workflowsData: Workflow[] = [
     status: "Inactive",
     actions: 4,
     created: "Dec 25, 2024",
+    type: "Simple Workflow",
   },
   {
     id: "13",
@@ -172,6 +185,7 @@ const workflowsData: Workflow[] = [
     status: "Active",
     actions: 3,
     created: "Dec 25, 2024",
+    type: "Advance Workflow",
   },
   {
     id: "14",
@@ -181,6 +195,7 @@ const workflowsData: Workflow[] = [
     status: "Active",
     actions: 2,
     created: "Dec 24, 2024",
+    type: "Advance Workflow",
   },
   {
     id: "15",
@@ -191,6 +206,7 @@ const workflowsData: Workflow[] = [
     status: "Inactive",
     actions: 5,
     created: "Dec 24, 2024",
+    type: "Advance Workflow",
   },
   {
     id: "16",
@@ -201,6 +217,7 @@ const workflowsData: Workflow[] = [
     status: "Active",
     actions: 4,
     created: "Dec 23, 2024",
+    type: "Advance Workflow",
   },
   {
     id: "17",
@@ -211,6 +228,7 @@ const workflowsData: Workflow[] = [
     status: "Active",
     actions: 3,
     created: "Dec 23, 2024",
+    type: "Advance Workflow",
   },
   {
     id: "18",
@@ -221,6 +239,7 @@ const workflowsData: Workflow[] = [
     status: "Inactive",
     actions: 2,
     created: "Dec 22, 2024",
+    type: "Simple Workflow",
   },
   {
     id: "19",
@@ -230,6 +249,7 @@ const workflowsData: Workflow[] = [
     status: "Active",
     actions: 4,
     created: "Dec 22, 2024",
+    type: "Advance Workflow",
   },
   {
     id: "20",
@@ -240,6 +260,7 @@ const workflowsData: Workflow[] = [
     status: "Active",
     actions: 6,
     created: "Dec 21, 2024",
+    type: "Advance Workflow",
   },
 ];
 
@@ -394,7 +415,7 @@ const WorkflowsList = () => {
       {/* Header */}
       <div className="flex items-center justify-between py-1">
         <h1 className="text-xl font-semibold text-foreground font-inter">
-          Workflows
+          Productivity Engine
         </h1>
       </div>
 
@@ -486,6 +507,15 @@ const WorkflowsList = () => {
                           borderBottomColor: "#D6DEE9",
                         }}
                       >
+                        Type
+                      </TableHead>
+                      <TableHead
+                        className="font-semibold border-r-0 text-sm text-foreground h-12 border-b sticky top-0"
+                        style={{
+                          backgroundColor: "#ECF0F7",
+                          borderBottomColor: "#D6DEE9",
+                        }}
+                      >
                         Trigger
                       </TableHead>
                       <TableHead
@@ -539,6 +569,9 @@ const WorkflowsList = () => {
                               {workflow.description}
                             </div>
                           </div>
+                        </TableCell>
+                        <TableCell className="py-2 border-r-0">
+                          {workflow.type}
                         </TableCell>
                         <TableCell className="py-2 border-r-0">
                           {getTriggerBadge(workflow.trigger)}

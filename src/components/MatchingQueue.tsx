@@ -682,7 +682,7 @@ const MatchingQueue = () => {
       <div className="flex items-center justify-between py-1">
         <div>
           <h1 className="text-xl font-semibold text-foreground font-inter">
-            Document Matching
+            Data Match
           </h1>
         </div>
         <div className="flex space-x-2 items-center">

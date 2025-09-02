@@ -62,7 +62,7 @@ const Index = () => {
   const { enabledModules, loading } = useClientModules();
   const fullWidth = useFullWidth();
   const isAuthPage = useIsAuthPage();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleMenuToggle = () => {
     setSidebarOpen(!sidebarOpen);
@@ -96,20 +96,21 @@ const Index = () => {
       <div className="flex flex-1 overflow-hidden pt-14">
         {/* Sidebar */}
         {sidebarOpen && (
-          <div className="w-60 bg-white border-r border-gray-200 z-40 flex-shrink-0 transition-all duration-300">
+          <div className="w-60 bg-white border-r border-gray-200 z-40 flex-shrink-0 transition-all duration-300 h-full">
             <Sidebar enabledModules={enabledModules} />
           </div>
         )}
 
         <main
-          className={`flex-1 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 overflow-hidden ${
+          className={`flex-1 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 overflow-y-scroll ${
             !fullWidth ? "px-4" : ""
           } flex flex-col`}
+          style={{ maxHeight: `calc(100vh - 60px)` }}
         >
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1">
             <Routes>
               {/* Main App Routes */}
-              <Route path="/" element={<MatchingQueue />} />
+              <Route path="/" element={<Workspace />} />
               <Route path="/matching" element={<MatchingQueue />} />
               <Route
                 path="/matching/sets/:setId"
