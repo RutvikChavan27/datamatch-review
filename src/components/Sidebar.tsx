@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ChevronDown, LogOut, UserCircle, Settings, Home, Database, Workflow, FileText, GitMerge, BarChart3 } from 'lucide-react';
+import { ChevronDown, LogOut, UserCircle, Settings, Home, Database, Workflow, FileText, GitMerge, BarChart3, HelpCircle } from 'lucide-react';
+import LoadingScreen from './LoadingScreen';
 
 interface SidebarProps {
   enabledModules: {
@@ -30,7 +31,9 @@ interface NavCategory {
 
 const Sidebar: React.FC<SidebarProps> = ({ enabledModules }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [expandedSection, setExpandedSection] = useState<'PRODUCTIVITY ENGINE' | 'DOCUMENT MATCHING' | null>('DOCUMENT MATCHING');
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
 
   const isActive = (path?: string) => {
     if (!path) return false;
@@ -119,8 +122,19 @@ const Sidebar: React.FC<SidebarProps> = ({ enabledModules }) => {
     );
   };
 
+  const handleSignOut = () => {
+    setShowLoadingScreen(true);
+    // Simulate logout process delay
+    setTimeout(() => {
+      setShowLoadingScreen(false);
+      navigate('/login');
+    }, 2000);
+  };
+
   return (
-    <aside className="h-full w-full bg-white overflow-y-auto flex flex-col">
+    <>
+      {showLoadingScreen && <LoadingScreen />}
+      <aside className="h-full w-full bg-white overflow-y-auto flex flex-col">
 
       <nav className="flex-1 px-4 pb-4 pt-8 space-y-5">
         {/* Main Navigation */}
@@ -163,16 +177,21 @@ const Sidebar: React.FC<SidebarProps> = ({ enabledModules }) => {
               <ChevronDown className="h-4 w-4 text-gray-400" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-white border border-gray-200 shadow-lg">
-              <DropdownMenuItem className="flex items-center space-x-2 p-3 hover:bg-gray-50">
-                <UserCircle className="h-4 w-4" />
-                <span>Profile</span>
+              <DropdownMenuItem className="flex items-center space-x-2 p-3 hover:bg-gray-50" asChild>
+                <Link to="/profile">
+                  <UserCircle className="h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem className="flex items-center space-x-2 p-3 hover:bg-gray-50">
-                <Settings className="h-4 w-4" />
-                <span>Settings</span>
+                <HelpCircle className="h-4 w-4" />
+                <span>Help & Support</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-gray-200" />
-              <DropdownMenuItem className="flex items-center space-x-2 p-3 hover:bg-gray-50 text-red-600">
+              <DropdownMenuItem 
+                className="flex items-center space-x-2 p-3 hover:bg-gray-50 text-red-600"
+                onClick={handleSignOut}
+              >
                 <LogOut className="h-4 w-4" />
                 <span>Sign out</span>
               </DropdownMenuItem>
@@ -181,6 +200,7 @@ const Sidebar: React.FC<SidebarProps> = ({ enabledModules }) => {
         </div>
       </div>
     </aside>
+    </>
   );
 };
 

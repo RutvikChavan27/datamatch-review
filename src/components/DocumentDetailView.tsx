@@ -3,16 +3,7 @@ import { ArrowLeft, ZoomIn, ZoomOut, RotateCw, FileText, Info, Link, GitBranch, 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { 
-  Breadcrumb,
-  BreadcrumbEllipsis,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-
+import { Breadcrumb, BreadcrumbEllipsis, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,186 +16,202 @@ import { toast } from 'sonner';
 import { Document, ExtractedField } from '@/types/storage';
 import { format } from 'date-fns';
 import { getBreadcrumbPath } from '@/utils/storageData';
-
 interface DocumentDetailViewProps {
   document: Document;
   onClose: () => void;
 }
 
 // Purchase Order mock data based on reference image
-const mockExtractedFields: ExtractedField[] = [
-  {
-    id: 'po-number',
-    label: 'PO Number',
-    value: 'PO-2024-001234',
-    confidence: 98,
-    isEditable: true,
-    isRequired: true,
-    type: 'text'
-  },
-  {
-    id: 'date',
-    label: 'Date',
-    value: 'January 25, 2024',
-    confidence: 95,
-    isEditable: true,
-    isRequired: true,
-    type: 'date'
-  },
-  {
-    id: 'due-date',
-    label: 'Due Date',
-    value: 'February 15, 2024',
-    confidence: 92,
-    isEditable: true,
-    isRequired: false,
-    type: 'date'
-  },
-  {
-    id: 'vendor-name',
-    label: 'Vendor Name',
-    value: 'Global Supplies Inc.',
-    confidence: 96,
-    isEditable: true,
-    isRequired: true,
-    type: 'text'
-  },
-  {
-    id: 'vendor-address',
-    label: 'Vendor Address',
-    value: '456 Vendor Avenue, Chicago, IL 606',
-    confidence: 89,
-    isEditable: true,
-    isRequired: false,
-    type: 'text'
-  },
-  {
-    id: 'total-amount',
-    label: 'Total Amount',
-    value: '$6,509.84',
-    confidence: 97,
-    isEditable: true,
-    isRequired: true,
-    type: 'currency'
-  },
-  {
-    id: 'subtotal',
-    label: 'Subtotal',
-    value: '$5,999.85',
-    confidence: 94,
-    isEditable: true,
-    isRequired: false,
-    type: 'currency'
-  },
-  {
-    id: 'tax',
-    label: 'Tax',
-    value: '$509.99',
-    confidence: 91,
-    isEditable: true,
-    isRequired: false,
-    type: 'currency'
-  },
-  {
-    id: 'terms',
-    label: 'Terms',
-    value: 'Net 30 days',
-    confidence: 88,
-    isEditable: true,
-    isRequired: false,
-    type: 'text'
-  }
-];
-
-const mockRelatedDocuments = [
-  { id: 'rel-1', name: 'Invoice_INV-5678.pdf', type: 'pdf', modified: new Date('2024-01-18'), similarity: null },
-  { id: 'rel-2', name: 'Receipt_REC-9012.pdf', type: 'pdf', modified: new Date('2024-01-20'), similarity: null }
-];
-
-const mockSimilarDocuments = [
-  { id: 'sim-1', name: 'Purchase_Order_12346.pdf', type: 'pdf', modified: new Date('2024-01-16'), similarity: 94 },
-  { id: 'sim-2', name: 'Purchase_Order_12344.pdf', type: 'pdf', modified: new Date('2024-01-14'), similarity: 89 },
-  { id: 'sim-3', name: 'PO_Template_Standard.pdf', type: 'pdf', modified: new Date('2024-01-10'), similarity: 76 }
-];
-
-const mockWorkflows = [
-  {
-    id: 'invoice-processing',
-    name: 'Invoice Processing',
-    description: 'Standard invoice approval workflow',
-    estimatedTime: '2-3 business days',
-    assignees: 'Finance Team',
-    automation: 'Partial Automation',
-    icon: DollarSign
-  },
-  {
-    id: 'document-approval',
-    name: 'Document Approval',
-    description: 'Multi-level approval process',
-    estimatedTime: '1-2 business days',
-    assignees: 'Manager, Director',
-    automation: 'Manual Review',
-    icon: CheckSquare
-  },
-  {
-    id: 'archive-document',
-    name: 'Archive Document',
-    description: 'Move to long-term storage',
-    estimatedTime: 'Immediate',
-    assignees: 'System',
-    automation: 'Fully Automated',
-    icon: Archive
-  }
-];
-
-const mockWorkflowSteps = [
-  { id: 'review', name: 'Document Review', status: 'completed', icon: CheckCircle },
-  { id: 'approval', name: 'Manager Approval', status: 'current', icon: Clock },
-  { id: 'processing', name: 'Final Processing', status: 'pending', icon: Circle }
-];
-
-const mockVersionHistory = [
-  { version: '1.2', date: '2024-01-16', user: 'Sarah Johnson', action: 'Updated' },
-  { version: '1.1', date: '2024-01-15', user: 'Mike Wilson', action: 'Reviewed' },
-  { version: '1.0', date: '2024-01-15', user: 'John Smith', action: 'Created' }
-];
-
+const mockExtractedFields: ExtractedField[] = [{
+  id: 'po-number',
+  label: 'PO Number',
+  value: 'PO-2024-001234',
+  confidence: 98,
+  isEditable: true,
+  isRequired: true,
+  type: 'text'
+}, {
+  id: 'date',
+  label: 'Date',
+  value: 'January 25, 2024',
+  confidence: 95,
+  isEditable: true,
+  isRequired: true,
+  type: 'date'
+}, {
+  id: 'due-date',
+  label: 'Due Date',
+  value: 'February 15, 2024',
+  confidence: 92,
+  isEditable: true,
+  isRequired: false,
+  type: 'date'
+}, {
+  id: 'vendor-name',
+  label: 'Vendor Name',
+  value: 'Global Supplies Inc.',
+  confidence: 96,
+  isEditable: true,
+  isRequired: true,
+  type: 'text'
+}, {
+  id: 'vendor-address',
+  label: 'Vendor Address',
+  value: '456 Vendor Avenue, Chicago, IL 606',
+  confidence: 89,
+  isEditable: true,
+  isRequired: false,
+  type: 'text'
+}, {
+  id: 'total-amount',
+  label: 'Total Amount',
+  value: '$6,509.84',
+  confidence: 97,
+  isEditable: true,
+  isRequired: true,
+  type: 'currency'
+}, {
+  id: 'subtotal',
+  label: 'Subtotal',
+  value: '$5,999.85',
+  confidence: 94,
+  isEditable: true,
+  isRequired: false,
+  type: 'currency'
+}, {
+  id: 'tax',
+  label: 'Tax',
+  value: '$509.99',
+  confidence: 91,
+  isEditable: true,
+  isRequired: false,
+  type: 'currency'
+}, {
+  id: 'terms',
+  label: 'Terms',
+  value: 'Net 30 days',
+  confidence: 88,
+  isEditable: true,
+  isRequired: false,
+  type: 'text'
+}];
+const mockRelatedDocuments = [{
+  id: 'rel-1',
+  name: 'Invoice_INV-5678.pdf',
+  type: 'pdf',
+  modified: new Date('2024-01-18'),
+  similarity: null
+}, {
+  id: 'rel-2',
+  name: 'Receipt_REC-9012.pdf',
+  type: 'pdf',
+  modified: new Date('2024-01-20'),
+  similarity: null
+}];
+const mockSimilarDocuments = [{
+  id: 'sim-1',
+  name: 'Purchase_Order_12346.pdf',
+  type: 'pdf',
+  modified: new Date('2024-01-16'),
+  similarity: 94
+}, {
+  id: 'sim-2',
+  name: 'Purchase_Order_12344.pdf',
+  type: 'pdf',
+  modified: new Date('2024-01-14'),
+  similarity: 89
+}, {
+  id: 'sim-3',
+  name: 'PO_Template_Standard.pdf',
+  type: 'pdf',
+  modified: new Date('2024-01-10'),
+  similarity: 76
+}];
+const mockWorkflows = [{
+  id: 'invoice-processing',
+  name: 'Invoice Processing',
+  description: 'Standard invoice approval workflow',
+  estimatedTime: '2-3 business days',
+  assignees: 'Finance Team',
+  automation: 'Partial Automation',
+  icon: DollarSign
+}, {
+  id: 'document-approval',
+  name: 'Document Approval',
+  description: 'Multi-level approval process',
+  estimatedTime: '1-2 business days',
+  assignees: 'Manager, Director',
+  automation: 'Manual Review',
+  icon: CheckSquare
+}, {
+  id: 'archive-document',
+  name: 'Archive Document',
+  description: 'Move to long-term storage',
+  estimatedTime: 'Immediate',
+  assignees: 'System',
+  automation: 'Fully Automated',
+  icon: Archive
+}];
+const mockWorkflowSteps = [{
+  id: 'review',
+  name: 'Document Review',
+  status: 'completed',
+  icon: CheckCircle
+}, {
+  id: 'approval',
+  name: 'Manager Approval',
+  status: 'current',
+  icon: Clock
+}, {
+  id: 'processing',
+  name: 'Final Processing',
+  status: 'pending',
+  icon: Circle
+}];
+const mockVersionHistory = [{
+  version: '1.2',
+  date: '2024-01-16',
+  user: 'Sarah Johnson',
+  action: 'Updated'
+}, {
+  version: '1.1',
+  date: '2024-01-15',
+  user: 'Mike Wilson',
+  action: 'Reviewed'
+}, {
+  version: '1.0',
+  date: '2024-01-15',
+  user: 'John Smith',
+  action: 'Created'
+}];
 const getConfidenceBadge = (confidence: number) => {
-  if (confidence >= 90) return (
-    <Badge className="bg-green-50 text-green-700 border-green-200">
+  if (confidence >= 90) return <Badge className="bg-green-50 text-green-700 border-green-200">
       <CheckCircle className="w-3 h-3 mr-1" />
       {confidence}%
-    </Badge>
-  );
-  if (confidence >= 70) return (
-    <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">
+    </Badge>;
+  if (confidence >= 70) return <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">
       <AlertCircle className="w-3 h-3 mr-1" />
       {confidence}%
-    </Badge>
-  );
-  return (
-    <Badge className="bg-red-50 text-red-700 border-red-200">
+    </Badge>;
+  return <Badge className="bg-red-50 text-red-700 border-red-200">
       <AlertTriangle className="w-3 h-3 mr-1" />
       {confidence}%
-    </Badge>
-  );
+    </Badge>;
 };
-
-const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClose }) => {
+const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({
+  document,
+  onClose
+}) => {
   const [zoom, setZoom] = useState(100);
   const [rotation, setRotation] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages] = useState(3);
-  
   const [extractedFields, setExtractedFields] = useState<ExtractedField[]>(mockExtractedFields);
-  
   const [selectedForm, setSelectedForm] = useState('purchase-order');
   const [activeTool, setActiveTool] = useState<'select' | 'pan'>('select');
   const [selectedWorkflow, setSelectedWorkflow] = useState('');
   const [showVersionHistory, setShowVersionHistory] = useState(false);
-
   const breadcrumbPath = getBreadcrumbPath(document.folderId);
-
   const handleZoomChange = (value: string) => {
     if (value === 'fit-width') {
       setZoom(100); // Mock fit to width
@@ -216,19 +223,15 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
       setZoom(parseInt(value));
     }
   };
-
   const handleSaveChanges = () => {
     toast.success('Changes saved successfully');
   };
-
   const handleFieldChange = (fieldId: string, value: string) => {
-    setExtractedFields(prev => 
-      prev.map(field => 
-        field.id === fieldId ? { ...field, value } : field
-      )
-    );
+    setExtractedFields(prev => prev.map(field => field.id === fieldId ? {
+      ...field,
+      value
+    } : field));
   };
-
   const handleWorkflowStart = () => {
     if (selectedWorkflow) {
       const workflow = mockWorkflows.find(w => w.id === selectedWorkflow);
@@ -237,39 +240,27 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
       toast.error('Please select a workflow first');
     }
   };
-
-
-
-
-
-  return (
-    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 0px)' }}>
+  return <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 overflow-hidden flex flex-col" style={{
+    height: 'calc(100vh - 0px)'
+  }}>
       {/* Breadcrumb Navigation */}
       <div className="mb-3 pt-3">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink 
-                href="#" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  onClose();
-                }}
-                className="font-medium"
-              >
+              <BreadcrumbLink href="#" onClick={e => {
+              e.preventDefault();
+              onClose();
+            }} className="font-medium">
                 Storage
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink 
-                href="#" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  onClose();
-                }}
-                className="font-medium"
-              >
+              <BreadcrumbLink href="#" onClick={e => {
+              e.preventDefault();
+              onClose();
+            }} className="font-medium">
                 {breadcrumbPath && breadcrumbPath.length > 1 ? breadcrumbPath[breadcrumbPath.length - 1]?.name : 'Unknown Folder'}
               </BreadcrumbLink>
             </BreadcrumbItem>
@@ -298,6 +289,9 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
                   </div>
                 </div>
               </div>
+              <Button variant="secondary">
+                Action
+              </Button>
             </div>
           </div>
         </div>
@@ -310,7 +304,9 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
           <ResizablePanel defaultSize={75} minSize={50}>
             <div className="h-full flex flex-col bg-white rounded-lg shadow-sm m-2">
               {/* Toolbar */}
-              <div className="flex-shrink-0 p-3 rounded-t-lg" style={{ backgroundColor: '#1a2332' }}>
+              <div className="flex-shrink-0 p-3 rounded-t-lg" style={{
+              backgroundColor: '#1a2332'
+            }}>
                 <div className="flex items-center justify-between">
                   {/* Left side - Group A (Navigation) + Group B (Zoom) */}
                   <div className="flex items-center space-x-4">
@@ -319,12 +315,7 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              disabled={currentPage === 1}
-                              className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                            >
+                            <Button variant="outline" size="sm" disabled={currentPage === 1} className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white">
                               <ChevronLeft className="w-4 h-4 stroke-white" />
                             </Button>
                           </TooltipTrigger>
@@ -334,22 +325,13 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
                         </Tooltip>
                       </TooltipProvider>
                       <div className="flex items-center space-x-1">
-                        <Input 
-                          value={currentPage}
-                          readOnly
-                          className="w-12 h-8 text-center bg-white/10 border-white/20 text-white cursor-default"
-                        />
+                        <Input value={currentPage} readOnly className="w-12 h-8 text-center bg-white/10 border-white/20 text-white cursor-default" />
                         <span className="text-sm text-white/70">of {totalPages}</span>
                       </div>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              disabled={currentPage === totalPages}
-                              className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                            >
+                            <Button variant="outline" size="sm" disabled={currentPage === totalPages} className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white">
                               <ChevronRight className="w-4 h-4 stroke-white" />
                             </Button>
                           </TooltipTrigger>
@@ -367,12 +349,7 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => setZoom(Math.max(zoom - 25, 25))}
-                              className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                            >
+                            <Button variant="outline" size="sm" onClick={() => setZoom(Math.max(zoom - 25, 25))} className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white">
                               <ZoomOut className="w-4 h-4 stroke-white" />
                             </Button>
                           </TooltipTrigger>
@@ -399,12 +376,7 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => setZoom(Math.min(zoom + 25, 200))}
-                              className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                            >
+                            <Button variant="outline" size="sm" onClick={() => setZoom(Math.min(zoom + 25, 200))} className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white">
                               <ZoomIn className="w-4 h-4 stroke-white" />
                             </Button>
                           </TooltipTrigger>
@@ -416,11 +388,7 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                            >
+                            <Button variant="outline" size="sm" className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white">
                               <Maximize className="w-4 h-4 stroke-white" />
                             </Button>
                           </TooltipTrigger>
@@ -439,12 +407,7 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => setRotation((rotation + 90) % 360)}
-                              className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                            >
+                            <Button variant="outline" size="sm" onClick={() => setRotation((rotation + 90) % 360)} className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white">
                               <RotateCw className="w-4 h-4 stroke-white" />
                             </Button>
                           </TooltipTrigger>
@@ -456,11 +419,7 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                            >
+                            <Button variant="outline" size="sm" className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white">
                               <Printer className="w-4 h-4 stroke-white" />
                             </Button>
                           </TooltipTrigger>
@@ -472,11 +431,7 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                            >
+                            <Button variant="outline" size="sm" className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white">
                               <Download className="w-4 h-4 stroke-white" />
                             </Button>
                           </TooltipTrigger>
@@ -494,15 +449,7 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant={activeTool === 'select' ? 'default' : 'outline'} 
-                              size="sm"
-                              onClick={() => setActiveTool('select')}
-                              className={activeTool === 'select' 
-                                ? "bg-white/20 border-white/20 text-white hover:bg-white/30" 
-                                : "border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                              }
-                            >
+                            <Button variant={activeTool === 'select' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTool('select')} className={activeTool === 'select' ? "bg-white/20 border-white/20 text-white hover:bg-white/30" : "border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"}>
                               <MousePointer className="w-4 h-4 stroke-white" />
                             </Button>
                           </TooltipTrigger>
@@ -514,15 +461,7 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant={activeTool === 'pan' ? 'default' : 'outline'} 
-                              size="sm"
-                              onClick={() => setActiveTool('pan')}
-                              className={activeTool === 'pan' 
-                                ? "bg-white/20 border-white/20 text-white hover:bg-white/30" 
-                                : "border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                              }
-                            >
+                            <Button variant={activeTool === 'pan' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTool('pan')} className={activeTool === 'pan' ? "bg-white/20 border-white/20 text-white hover:bg-white/30" : "border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"}>
                               <Hand className="w-4 h-4 stroke-white" />
                             </Button>
                           </TooltipTrigger>
@@ -534,11 +473,7 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                            >
+                            <Button variant="outline" size="sm" className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white">
                               <MessageSquare className="w-4 h-4 stroke-white" />
                               <Badge className="ml-1 px-1 text-xs bg-white/20 text-white border-white/20">3</Badge>
                             </Button>
@@ -554,17 +489,17 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
               </div>
 
               {/* Document Canvas */}
-              <div className="flex-1 p-4 overflow-auto rounded-b-lg" style={{ backgroundColor: '#212C4C' }}>
+              <div className="flex-1 p-4 overflow-auto rounded-b-lg" style={{
+              backgroundColor: '#212C4C'
+            }}>
                 <div className="max-w-4xl mx-auto">
-                  <div 
-                    className="bg-white shadow-lg border border-gray-200 mx-auto"
-                    style={{ 
-                      transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
-                      transformOrigin: 'center',
-                      width: '794px', // A4 width
-                      minHeight: '1123px' // A4 height
-                    }}
-                  >
+                  <div className="bg-white shadow-lg border border-gray-200 mx-auto" style={{
+                  transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
+                  transformOrigin: 'center',
+                  width: '794px',
+                  // A4 width
+                  minHeight: '1123px' // A4 height
+                }}>
                     {/* Mock Purchase Order Content */}
                     <div className="p-8 text-sm">
                       <div className="text-center mb-8">
@@ -660,7 +595,7 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
 
               {/* Form Selection */}
               <div className="flex-shrink-0 p-4 border-b border-border">
-                <Label className="text-sm font-medium">Select Form Template</Label>
+                <Label className="text-sm font-medium">Selected Index Form</Label>
                 <Select value={selectedForm} onValueChange={setSelectedForm}>
                   <SelectTrigger className="mt-2">
                     <SelectValue />
@@ -684,27 +619,19 @@ const DocumentDetailView: React.FC<DocumentDetailViewProps> = ({ document, onClo
                 </div>
 
                 <div className="space-y-3">
-                  {extractedFields.map((field) => (
-                    <div key={field.id} className="space-y-2">
+                  {extractedFields.map(field => <div key={field.id} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-sm font-medium text-muted-foreground">{field.label}</Label>
                         {getConfidenceBadge(field.confidence)}
                       </div>
-                      <Input
-                        value={field.value}
-                        onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                        className="w-full"
-                      />
-                    </div>
-                  ))}
+                      <Input value={field.value} onChange={e => handleFieldChange(field.id, e.target.value)} className="w-full" />
+                    </div>)}
                 </div>
               </div>
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default DocumentDetailView;

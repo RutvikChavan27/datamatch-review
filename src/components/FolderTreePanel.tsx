@@ -205,7 +205,7 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-white border border-border rounded-lg shadow-sm m-2">
+    <div className="h-full flex flex-col bg-white border border-border rounded-lg shadow-sm mb-2">
       {/* Header */}
       <div className="px-4 pt-4 pb-2 border-b border-border rounded-t-lg">
         <div className="flex items-center justify-between mb-3">

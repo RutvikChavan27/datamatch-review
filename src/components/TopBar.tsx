@@ -15,13 +15,11 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
     if (pathname === '/' || pathname === '/workspace') return 'Workspace';
     if (pathname.startsWith('/storage')) return 'Storage';
     if (pathname.startsWith('/workflows')) return 'Workflows';
-    if (pathname.startsWith('/documents/po-requests')) return 'PO Requests';
+    if (pathname.startsWith('/documents')) return 'Documents';
     if (pathname.startsWith('/matching')) return 'Document Matching';
-    if (pathname.startsWith('/documents/invoices')) return 'Invoices';
-    if (pathname.startsWith('/documents/purchase-orders')) return 'Purchase Orders';
-    if (pathname.startsWith('/documents/goods-receipt-notes')) return 'Proof of Delivery';
     if (pathname.startsWith('/reports')) return 'Reports';
-    return 'Document Processing';
+    if (pathname.startsWith('/settings')) return 'Settings';
+    return 'Workspace';
   };
 
   return (

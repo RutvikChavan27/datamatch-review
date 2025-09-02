@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -8,10 +9,12 @@ import {
   Target, 
   ShoppingCart, 
   Shield, 
-  Plug 
+  Plug,
+  ChevronRight 
 } from 'lucide-react';
 
 const Settings = () => {
+  const navigate = useNavigate();
   const foundationalSettings = [
     {
       title: "Storage Settings",
@@ -27,7 +30,8 @@ const Settings = () => {
       icon: Search,
       path: "/settings/search",
       bgColor: "bg-emerald-50",
-      iconColor: "text-emerald-600"
+      iconColor: "text-emerald-600",
+      disabled: true
     },
     {
       title: "Workflow Settings",
@@ -65,7 +69,8 @@ const Settings = () => {
       icon: Shield,
       path: "/settings/system-admin",
       bgColor: "bg-red-50",
-      iconColor: "text-red-600"
+      iconColor: "text-red-600",
+      disabled: true
     },
     {
       title: "Watch Folder Settings",
@@ -77,9 +82,14 @@ const Settings = () => {
     }
   ];
 
-  const SettingCard = ({ title, description, icon: Icon, path, bgColor, iconColor, onClick }) => (
+  const SettingCard = ({ title, description, icon: Icon, path, bgColor, iconColor, onClick, disabled = false }) => (
     <Card 
-      className="transition-all duration-200 hover:scale-105 hover:shadow-2xl hover:shadow-gray-300/50 border border-border/40 bg-white rounded-2xl shadow-md border-border/50 cursor-pointer"
+      className={`transition-all duration-200 border border-border/40 rounded-2xl shadow-md border-border/50 ${
+        disabled 
+          ? 'bg-gray-50 cursor-not-allowed opacity-50' 
+          : 'bg-white hover:scale-105 hover:shadow-2xl hover:shadow-gray-300/50 cursor-pointer'
+      }`}
+      onClick={disabled ? undefined : onClick}
     >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
@@ -96,35 +106,32 @@ const Settings = () => {
           </div>
         </div>
         <div className="flex justify-start">
-          <Button 
-            variant="secondary" 
-            size="sm"
-            onClick={(e) => {
+          <button
+            onClick={disabled ? undefined : (e) => {
               e.stopPropagation();
               onClick();
             }}
-            className="px-4 py-2"
+            disabled={disabled}
+            className={`text-sm font-medium flex items-center gap-1 ${
+              disabled 
+                ? 'text-gray-400 cursor-not-allowed' 
+                : 'text-blue-600 hover:text-blue-800'
+            }`}
           >
             View
-          </Button>
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </CardContent>
     </Card>
   );
 
   const handleCardClick = (path: string) => {
-    // TODO: Navigate to specific settings page
-    console.log(`Navigating to: ${path}`);
+    navigate(path);
   };
 
   return (
     <div className="space-y-2 px-4 pt-4 pb-2 max-w-full overflow-x-hidden">
-      {/* Compact Header */}
-      <div className="flex items-center justify-between py-1">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground font-inter">Settings</h1>
-        </div>
-      </div>
       
       <div className="space-y-8 max-w-7xl mx-auto">
         <div>
@@ -149,6 +156,7 @@ const Settings = () => {
                 bgColor={setting.bgColor}
                 iconColor={setting.iconColor}
                 onClick={() => handleCardClick(setting.path)}
+                disabled={setting.disabled}
               />
             ))}
           </div>
@@ -187,6 +195,7 @@ const Settings = () => {
                 bgColor={setting.bgColor}
                 iconColor={setting.iconColor}
                 onClick={() => handleCardClick(setting.path)}
+                disabled={setting.disabled}
               />
             ))}
           </div>

@@ -5,11 +5,19 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download, TrendingUp, TrendingDown, Folder, HardDrive, BarChart3, ChevronDown, Check, Settings, Users, Database, Workflow, Clock, Shield, FileText, X, Upload, Eye, CheckCircle, Trophy, XCircle, UserCheck, UsersRound, Activity, Hash, Tag, AlertCircle, Info } from 'lucide-react';
+import { Search, Download, TrendingUp, TrendingDown, Folder, HardDrive, BarChart3, ChevronDown, Check, Settings, Users, Database, Workflow, Clock, Shield, FileText, X, Upload, Eye, CheckCircle, Trophy, XCircle, UserCheck, UsersRound, Activity, Hash, Tag, AlertCircle, Info, CalendarIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as ChartTooltip, BarChart, Bar, XAxis, YAxis, LabelList } from 'recharts';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { GenerateDataMatchReportModal } from './GenerateDataMatchReportModal';
 import { GenerateProductivityEngineReportModal } from './GenerateProductivityEngineReportModal';
 import RecentActivity from './RecentActivity';
@@ -80,6 +88,21 @@ const ReportsAnalytics = () => {
   const [isProductivityModalOpen, setIsProductivityModalOpen] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState(workflowsData[0]); // Auto-select first workflow
   const [analyticsTimeRange, setAnalyticsTimeRange] = useState('Last 30 days');
+  const [isPOReportModalOpen, setIsPOReportModalOpen] = useState(false);
+  const [poReportData, setPOReportData] = useState({
+    vendors: [],
+    departments: [],
+    users: [],
+    minValue: '',
+    status: {
+      approved: false,
+      pending: false,
+      rejected: false
+    },
+    fromDate: undefined as Date | undefined,
+    toDate: undefined as Date | undefined,
+    exportFormat: 'PDF'
+  });
   const itemsPerPage = 10;
   const foldersData = [{
     name: 'Invoices',
@@ -580,53 +603,58 @@ const ReportsAnalytics = () => {
             <div className="w-1/2 space-y-6">
               {/* Workflows List */}
               <Card className="rounded-xl shadow-sm border border-border/50 h-full">
-                <CardContent className="p-6 h-full">
-                  {/* Stats Cards */}
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <Card className="rounded-xl shadow-sm border border-border/50">
-                      <CardContent className="p-4">
-                         <div className="flex items-start justify-between">
-                           <div>
-                             <p className="text-sm font-medium text-muted-foreground mb-1">Active Workflows</p>
-                             <p className="text-2xl font-bold text-foreground mb-1">47</p>
-                             <div className="flex items-center gap-1">
-                               <TrendingUp className="w-3 h-3 text-green-500" />
-                               <span className="text-xs font-medium text-green-500">+5 new</span>
-                             </div>
-                           </div>
-                           <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                             <Workflow className="w-6 h-6 text-blue-500" />
-                           </div>
-                         </div>
-                      </CardContent>
-                    </Card>
+                 <CardContent className="p-6 h-full">
+                   {/* Search Bar */}
+                   <div className="flex items-center justify-between mb-4">
+                     <h3 className="text-lg font-semibold text-foreground">Workflows</h3>
+                     <div className="relative">
+                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                       <Input type="search" placeholder="Search workflows..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 w-80" />
+                     </div>
+                   </div>
 
-                    <Card className="rounded-xl shadow-sm border border-border/50">
-                      <CardContent className="p-4">
-                         <div className="flex items-start justify-between">
-                           <div>
-                             <p className="text-sm font-medium text-muted-foreground mb-1">Documents Processed</p>
-                             <p className="text-2xl font-bold text-foreground mb-1">18,429</p>
-                             <div className="flex items-center gap-1">
-                               <TrendingUp className="w-3 h-3 text-green-500" />
-                               <span className="text-xs font-medium text-green-500">+34%</span>
-                             </div>
-                           </div>
-                           <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-                             <FileText className="w-6 h-6 text-green-500" />
-                           </div>
-                         </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-              {/* Search Bar */}
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-foreground">Workflows</h3>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input type="search" placeholder="Search workflows..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 w-80" />
-                </div>
-              </div>
+                   {/* Stats Cards */}
+                   <div className="grid grid-cols-2 gap-4 mb-6">
+                     <Card className="rounded-xl shadow-sm border border-border/50">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                                <Workflow className="w-6 h-6 text-blue-500" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-muted-foreground mb-1">Active Workflows</p>
+                                <p className="text-2xl font-bold text-foreground mb-1">47</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <TrendingUp className="w-3 h-3 text-green-500" />
+                              <span className="text-xs font-medium text-green-500">+5 new</span>
+                            </div>
+                          </div>
+                       </CardContent>
+                     </Card>
+
+                     <Card className="rounded-xl shadow-sm border border-border/50">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                                <FileText className="w-6 h-6 text-green-500" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-muted-foreground mb-1">Documents Processed</p>
+                                <p className="text-2xl font-bold text-foreground mb-1">18,429</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <TrendingUp className="w-3 h-3 text-green-500" />
+                              <span className="text-xs font-medium text-green-500">+34%</span>
+                            </div>
+                          </div>
+                       </CardContent>
+                     </Card>
+                   </div>
 
               <div className="shadow-lg shadow-black/5">
                 <div className="border border-border rounded-lg overflow-hidden">
@@ -879,6 +907,7 @@ const ReportsAnalytics = () => {
               <h2 className="text-xl font-semibold text-foreground">Purchase Order Requests</h2>
               <p className="text-sm text-muted-foreground">PO request processing and approval workflow analytics</p>
             </div>
+            <Button onClick={() => setIsPOReportModalOpen(true)}>Generate Report</Button>
           </div>
           {/* Overview Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -972,17 +1001,33 @@ const ReportsAnalytics = () => {
                   <div className="border border-border rounded-lg overflow-hidden">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead className="font-semibold border-r-0 border-b bg-muted/30">
+                        <TableRow className="bg-muted/50 border-b border-border hover:bg-muted/50">
+                          <TableHead className="font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t" style={{
+                            backgroundColor: '#DFE7F3',
+                            borderBottomColor: '#c9d1e0',
+                            borderTopColor: '#c9d1e0'
+                          }}>
                             Vendor Name
                           </TableHead>
-                          <TableHead className="font-semibold border-r-0 border-b bg-muted/30">
+                          <TableHead className="font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t" style={{
+                            backgroundColor: '#DFE7F3',
+                            borderBottomColor: '#c9d1e0',
+                            borderTopColor: '#c9d1e0'
+                          }}>
                             Volume
                           </TableHead>
-                          <TableHead className="font-semibold border-r-0 border-b bg-muted/30">
+                          <TableHead className="font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t" style={{
+                            backgroundColor: '#DFE7F3',
+                            borderBottomColor: '#c9d1e0',
+                            borderTopColor: '#c9d1e0'
+                          }}>
                             Value
                           </TableHead>
-                          <TableHead className="font-semibold border-r-0 border-b bg-muted/30">
+                          <TableHead className="font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t" style={{
+                            backgroundColor: '#DFE7F3',
+                            borderBottomColor: '#c9d1e0',
+                            borderTopColor: '#c9d1e0'
+                          }}>
                             Type
                           </TableHead>
                         </TableRow>
@@ -1944,6 +1989,211 @@ const ReportsAnalytics = () => {
       <GenerateDataMatchReportModal isOpen={isDataMatchModalOpen} onClose={() => setIsDataMatchModalOpen(false)} />
       
       <GenerateProductivityEngineReportModal isOpen={isProductivityModalOpen} onClose={() => setIsProductivityModalOpen(false)} />
+      
+      <Dialog open={isPOReportModalOpen} onOpenChange={setIsPOReportModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Generate PO Requests Report</DialogTitle>
+          </DialogHeader>
+          
+          <div className="grid gap-6 py-4">
+            {/* Vendor Selection */}
+            <div className="grid gap-2">
+              <Label htmlFor="vendor">Vendor Selection</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select vendors" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border">
+                  <SelectItem value="all">All Vendors</SelectItem>
+                  <SelectItem value="vendor1">ABC Supplies Inc.</SelectItem>
+                  <SelectItem value="vendor2">Global Materials Ltd.</SelectItem>
+                  <SelectItem value="vendor3">Tech Solutions Corp.</SelectItem>
+                  <SelectItem value="vendor4">Office Equipment Co.</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Department Selection */}
+            <div className="grid gap-2">
+              <Label htmlFor="department">Department Selection</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select departments" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border">
+                  <SelectItem value="all">All Departments</SelectItem>
+                  <SelectItem value="finance">Finance</SelectItem>
+                  <SelectItem value="operations">Operations</SelectItem>
+                  <SelectItem value="hr">Human Resources</SelectItem>
+                  <SelectItem value="it">Information Technology</SelectItem>
+                  <SelectItem value="marketing">Marketing</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* User Selection */}
+            <div className="grid gap-2">
+              <Label htmlFor="user">User Selection</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select users" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border">
+                  <SelectItem value="all">All Users</SelectItem>
+                  <SelectItem value="sarah">Sarah Johnson</SelectItem>
+                  <SelectItem value="michael">Michael Chen</SelectItem>
+                  <SelectItem value="lisa">Lisa Rodriguez</SelectItem>
+                  <SelectItem value="emma">Emma Thompson</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* PO Value Threshold */}
+            <div className="grid gap-2">
+              <Label htmlFor="minValue">PO Value Threshold</Label>
+              <Input
+                id="minValue"
+                type="number"
+                placeholder="Minimum amount"
+                value={poReportData.minValue}
+                onChange={(e) => setPOReportData(prev => ({ ...prev, minValue: e.target.value }))}
+              />
+            </div>
+
+            {/* Status Filter */}
+            <div className="grid gap-2">
+              <Label>Status Filter</Label>
+              <div className="flex flex-row gap-6">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="approved"
+                    checked={poReportData.status.approved}
+                    onCheckedChange={(checked) => 
+                      setPOReportData(prev => ({ 
+                        ...prev, 
+                        status: { ...prev.status, approved: checked === true }
+                      }))
+                    }
+                  />
+                  <Label htmlFor="approved">Approved</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="pending"
+                    checked={poReportData.status.pending}
+                    onCheckedChange={(checked) => 
+                      setPOReportData(prev => ({ 
+                        ...prev, 
+                        status: { ...prev.status, pending: checked === true }
+                      }))
+                    }
+                  />
+                  <Label htmlFor="pending">Pending</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="rejected"
+                    checked={poReportData.status.rejected}
+                    onCheckedChange={(checked) => 
+                      setPOReportData(prev => ({ 
+                        ...prev, 
+                        status: { ...prev.status, rejected: checked === true }
+                      }))
+                    }
+                  />
+                  <Label htmlFor="rejected">Rejected</Label>
+                </div>
+              </div>
+            </div>
+
+            {/* Date Range */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>From Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "justify-start text-left font-normal",
+                        !poReportData.fromDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {poReportData.fromDate ? format(poReportData.fromDate, "dd-MM-yyyy") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-background border border-border" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={poReportData.fromDate}
+                      onSelect={(date) => setPOReportData(prev => ({ ...prev, fromDate: date }))}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label>To Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "justify-start text-left font-normal",
+                        !poReportData.toDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {poReportData.toDate ? format(poReportData.toDate, "dd-MM-yyyy") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-background border border-border" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={poReportData.toDate}
+                      onSelect={(date) => setPOReportData(prev => ({ ...prev, toDate: date }))}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            {/* Export Format */}
+            <div className="grid gap-2">
+              <Label htmlFor="exportFormat">Export Format</Label>
+              <Select defaultValue="PDF">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border">
+                  <SelectItem value="PDF">PDF</SelectItem>
+                  <SelectItem value="Excel">Excel</SelectItem>
+                  <SelectItem value="CSV">CSV</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPOReportModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              // Handle report generation logic here
+              console.log('Generating PO Report with data:', poReportData);
+              setIsPOReportModalOpen(false);
+            }}>
+              Generate Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>;
 };
 export default ReportsAnalytics;

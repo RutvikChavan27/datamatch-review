@@ -204,7 +204,7 @@ const DocumentListPanel: React.FC<DocumentListPanelProps> = ({
 
   const renderTableView = () => (
     <div className="shadow-lg shadow-black/5">
-      <div className="border border-border rounded-lg overflow-hidden">
+      <div className="rounded-lg overflow-hidden">
       <Table>
         <TableHeader className="sticky top-0 z-10">
           <TableRow className="bg-muted/50 border-b border-border hover:bg-muted/50">
@@ -375,49 +375,55 @@ const DocumentListPanel: React.FC<DocumentListPanelProps> = ({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Toolbar */}
-      <div className="px-4 pt-4 pb-2">
-        <div className="flex items-center justify-between mb-4">
-          {/* Folder Title */}
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              {breadcrumbPath[breadcrumbPath.length - 1]?.name || 'Documents'}
-            </h2>
-          </div>
+      {/* Header Section with Folder Title and Breadcrumb */}
+      <div className="border-b border-border p-4">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb className="mb-4">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink 
+                href="#" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  onBreadcrumbClick('root');
+                }}
+                className="cursor-pointer"
+              >
+                Home
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            {breadcrumbPath.map((folder, index) => (
+              <React.Fragment key={folder.id}>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  {index === breadcrumbPath.length - 1 ? (
+                    <BreadcrumbPage>{folder.name}</BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink 
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onBreadcrumbClick(folder.id);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      {folder.name}
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+              </React.Fragment>
+            ))}
+          </BreadcrumbList>
+        </Breadcrumb>
 
-          <div className="flex items-center space-x-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                type="search"
-                placeholder="Search documents..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 w-80"
-              />
-            </div>
-
-            {/* Filter */}
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="pdf">PDF</SelectItem>
-                <SelectItem value="doc">Documents</SelectItem>
-                <SelectItem value="xls">Spreadsheets</SelectItem>
-                <SelectItem value="img">Images</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button variant="outline">
-              <Upload className="w-4 h-4 mr-2" />
-              Upload
-            </Button>
-          </div>
+        {/* Folder Title */}
+        <div className="mb-4">
+          <h1 className="text-xl font-semibold text-foreground">
+            {breadcrumbPath.length > 0 ? breadcrumbPath[breadcrumbPath.length - 1].name : 'Home'}
+          </h1>
         </div>
+
+      </div>
 
         {/* Bulk Actions */}
         {hasSelectedDocuments && (
@@ -441,7 +447,6 @@ const DocumentListPanel: React.FC<DocumentListPanelProps> = ({
             </div>
           </div>
         )}
-      </div>
 
       {/* Document List */}
       <div className="flex-1 overflow-y-auto p-4">

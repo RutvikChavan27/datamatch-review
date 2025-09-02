@@ -204,7 +204,7 @@ const DocumentPreviewInterface: React.FC<DocumentPreviewInterfaceProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0">
+      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-white">
         <div className="flex flex-col h-[95vh]">
           {/* Header */}
           <div className="h-16 border-b border-gray-200 px-6 py-3">
