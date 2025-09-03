@@ -51,9 +51,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
             </span>
             {location.pathname.startsWith("/storage") && (
               <DropdownMenu>
-                <DropdownMenuTrigger className="ml-2 p-1 hover:bg-gray-100 rounded">
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
-                </DropdownMenuTrigger>
+                <DropdownMenuTrigger className="ml-2 p-1 hover:bg-gray-100 rounded"></DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="start"
                   className="w-56 bg-white border border-gray-200 shadow-lg"

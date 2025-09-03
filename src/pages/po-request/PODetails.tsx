@@ -443,7 +443,7 @@ const PODetails: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 mr-[-20px]">
       <div className="flex">
         {/* Main Content - Left Panel */}
         <div className="w-full pr-2 py-4">

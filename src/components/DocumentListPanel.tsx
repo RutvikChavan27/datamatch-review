@@ -55,6 +55,7 @@ interface DocumentListPanelProps {
   onFolderSelect: (folderId: string) => void;
   onSelectionChange: (selectedIds: Set<string>) => void;
   onBreadcrumbClick: (folderId: string) => void;
+  viewMode?: string;
 }
 
 const getFileIcon = (type: Document['type']) => {
@@ -96,7 +97,8 @@ const DocumentListPanel: React.FC<DocumentListPanelProps> = ({
   onDocumentOpen,
   onFolderSelect,
   onSelectionChange,
-  onBreadcrumbClick
+  onBreadcrumbClick,
+  viewMode = 'list'
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('modified');
@@ -370,31 +372,103 @@ const DocumentListPanel: React.FC<DocumentListPanelProps> = ({
     </div>
   );
 
+  const renderCardView = () => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-4">
+      {filteredAndSortedContent.map((item) => {
+        if (item.itemType === 'folder') {
+          const folder = item as FolderNode & { itemType: 'folder' };
+          const FolderIcon = folder.type === 'archived' ? Archive : Folder;
+          return (
+            <Card 
+              key={`folder-${folder.id}`} 
+              className="cursor-pointer hover:shadow-md transition-all duration-200 border border-border hover:border-primary/30 bg-card"
+              onClick={() => onFolderSelect(folder.id)}
+            >
+              <CardContent className="p-3">
+                <div className="flex justify-between items-start mb-2">
+                  {/* Left side - Title and details */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium text-foreground truncate" title={folder.name}>
+                      {folder.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {folder.size}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(folder.created, 'MMM dd, yyyy')}
+                    </p>
+                  </div>
+                  
+                  {/* Right side - Icon */}
+                  <div className="flex-shrink-0 ml-2">
+                    <FolderIcon className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        } else {
+          const document = item as Document & { itemType: 'document' };
+          const FileIcon = getFileIcon(document.type);
+          return (
+            <Card 
+              key={`doc-${document.id}`} 
+              className="cursor-pointer hover:shadow-md transition-all duration-200 border border-border hover:border-primary/30 bg-card relative group"
+              onClick={() => onDocumentOpen(document)}
+            >
+              <CardContent className="p-3">
+                {/* Checkbox for selection */}
+                <div 
+                  className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Checkbox
+                    checked={selectedDocuments.has(document.id)}
+                    onCheckedChange={(checked) => handleDocumentCheck(document.id, checked as boolean)}
+                  />
+                </div>
+                
+                <div className="flex justify-between items-start">
+                  {/* Left side - Title and details */}
+                  <div className="flex-1 min-w-0 pr-2">
+                    <h3 className="text-sm font-medium text-foreground truncate" title={document.name}>
+                      {document.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {document.size}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(document.modified, 'MMM dd, yyyy')}
+                    </p>
+                  </div>
+                  
+                  {/* Right side - Icon with type color background */}
+                  <div className="flex-shrink-0">
+                    <div className={`w-8 h-8 rounded-md flex items-center justify-center ${getFileTypeColor(document.type)}`}>
+                      <FileIcon className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        }
+      })}
+    </div>
+  );
 
   const hasSelectedDocuments = selectedDocuments.size > 0;
 
   return (
     <div className="h-full flex flex-col">
       {/* Header Section with Folder Title and Breadcrumb */}
-      <div className="border-b border-border p-4">
+      <div className="border-b border-border px-4 pt-4 pb-1">
         {/* Breadcrumb Navigation */}
         <Breadcrumb className="mb-4">
           <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink 
-                href="#" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  onBreadcrumbClick('root');
-                }}
-                className="cursor-pointer"
-              >
-                Home
-              </BreadcrumbLink>
-            </BreadcrumbItem>
             {breadcrumbPath.map((folder, index) => (
               <React.Fragment key={folder.id}>
-                <BreadcrumbSeparator />
+                {index > 0 && <BreadcrumbSeparator />}
                 <BreadcrumbItem>
                   {index === breadcrumbPath.length - 1 ? (
                     <BreadcrumbPage>{folder.name}</BreadcrumbPage>
@@ -414,14 +488,7 @@ const DocumentListPanel: React.FC<DocumentListPanelProps> = ({
               </React.Fragment>
             ))}
           </BreadcrumbList>
-        </Breadcrumb>
-
-        {/* Folder Title */}
-        <div className="mb-4">
-          <h1 className="text-xl font-semibold text-foreground">
-            {breadcrumbPath.length > 0 ? breadcrumbPath[breadcrumbPath.length - 1].name : 'Home'}
-          </h1>
-        </div>
+         </Breadcrumb>
 
       </div>
 
@@ -450,6 +517,13 @@ const DocumentListPanel: React.FC<DocumentListPanelProps> = ({
 
       {/* Document List */}
       <div className="flex-1 overflow-y-auto p-4">
+        {/* Folder Title */}
+        <div className="mb-4">
+          <h1 className="text-xl font-semibold text-foreground">
+            {breadcrumbPath.length > 0 ? breadcrumbPath[breadcrumbPath.length - 1].name : 'All Files'}
+          </h1>
+        </div>
+        
         {filteredAndSortedContent.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
             <FileText className="w-12 h-12 mb-4 opacity-50" />
@@ -460,7 +534,8 @@ const DocumentListPanel: React.FC<DocumentListPanelProps> = ({
           </div>
         ) : (
           <>
-            {renderTableView()}
+            {console.log('Rendering with viewMode:', viewMode)}
+            {viewMode === 'card' ? renderCardView() : renderTableView()}
           </>
         )}
       </div>

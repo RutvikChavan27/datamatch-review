@@ -1,16 +1,20 @@
 import React, { useState, useCallback } from 'react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { List, Grid3x3 } from 'lucide-react';
 import FolderTreePanel from './FolderTreePanel';
 import DocumentListPanel from './DocumentListPanel';
 import CreateFolderWizard from './CreateFolderWizard';
 import DocumentDetailView from './DocumentDetailView';
 import { Document, FolderNode } from '@/types/storage';
 import { mockFolderStructure, getMixedContentForFolder, getBreadcrumbPath } from '@/utils/storageData';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 
 const Storage: React.FC = () => {
   const [selectedFolderId, setSelectedFolderId] = useState<string>('finance');
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<string>('list');
   
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
@@ -18,6 +22,19 @@ const Storage: React.FC = () => {
   // Get current folder data - both subfolders and documents
   const mixedContent = getMixedContentForFolder(selectedFolderId);
   const breadcrumbPath = getBreadcrumbPath(selectedFolderId);
+  
+  // For card view, get all folders from the tree structure
+  const getAllFoldersFromTree = (node: any): any[] => {
+    let allFolders = [node];
+    if (node.children) {
+      node.children.forEach((child: any) => {
+        allFolders = allFolders.concat(getAllFoldersFromTree(child));
+      });
+    }
+    return allFolders;
+  };
+  
+  const allFolders = getAllFoldersFromTree(mockFolderStructure);
 
   const handleFolderSelect = useCallback((folderId: string) => {
     setSelectedFolderId(folderId);
@@ -76,38 +93,102 @@ const Storage: React.FC = () => {
         <div>
           <h1 className="text-xl font-semibold text-foreground font-inter">Storage</h1>
         </div>
+        
+        {/* View Mode Toggle */}
+        <div className="flex items-center">
+          <TooltipProvider>
+            <ToggleGroup 
+              type="single" 
+              value={viewMode} 
+              onValueChange={(value) => {
+                console.log('Toggle changed to:', value);
+                if (value) {
+                  setViewMode(value);
+                  console.log('ViewMode set to:', value);
+                }
+              }}
+              className="bg-background rounded-lg p-1 border h-9"
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <ToggleGroupItem 
+                    value="list" 
+                    aria-label="List view"
+                    className="data-[state=on]:bg-[#0066A4] data-[state=on]:text-white data-[state=off]:bg-background data-[state=off]:text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200 rounded-md h-7"
+                  >
+                    <List className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>List view</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <ToggleGroupItem 
+                    value="card" 
+                    aria-label="Card view"
+                    className="data-[state=on]:bg-[#0066A4] data-[state=on]:text-white data-[state=off]:bg-background data-[state=off]:text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200 rounded-md h-7"
+                  >
+                    <Grid3x3 className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Card view</p>
+                </TooltipContent>
+              </Tooltip>
+            </ToggleGroup>
+          </TooltipProvider>
+        </div>
       </div>
       
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          {/* Left Panel - Folder Tree */}
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-            <FolderTreePanel
-              rootFolder={mockFolderStructure}
-              selectedFolderId={selectedFolderId}
-              onFolderSelect={handleFolderSelect}
-              onCreateFolder={handleCreateFolder}
-            />
-          </ResizablePanel>
+        {viewMode === 'card' ? (
+          <DocumentListPanel
+            folders={mixedContent.folders}
+            documents={mixedContent.documents}
+            breadcrumbPath={breadcrumbPath}
+            selectedDocuments={selectedDocuments}
+            onDocumentSelect={handleDocumentSelect}
+            onDocumentOpen={handleDocumentOpen}
+            onFolderSelect={handleFolderSelect}
+            onSelectionChange={handleSelectionChange}
+            onBreadcrumbClick={handleBreadcrumbClick}
+            viewMode={viewMode}
+          />
+        ) : (
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            {/* Left Panel - Folder Tree */}
+            <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+              <FolderTreePanel
+                rootFolder={mockFolderStructure}
+                selectedFolderId={selectedFolderId}
+                onFolderSelect={handleFolderSelect}
+                onCreateFolder={handleCreateFolder}
+              />
+            </ResizablePanel>
 
-          <ResizableHandle withHandle />
+            <ResizableHandle withHandle />
 
-          {/* Right Panel - Document List */}
-          <ResizablePanel defaultSize={75}>
-            <DocumentListPanel
-              folders={mixedContent.folders}
-              documents={mixedContent.documents}
-              breadcrumbPath={breadcrumbPath}
-              selectedDocuments={selectedDocuments}
-              onDocumentSelect={handleDocumentSelect}
-              onDocumentOpen={handleDocumentOpen}
-              onFolderSelect={handleFolderSelect}
-              onSelectionChange={handleSelectionChange}
-              onBreadcrumbClick={handleBreadcrumbClick}
-            />
-          </ResizablePanel>
-        </ResizablePanelGroup>
+            {/* Right Panel - Document List */}
+            <ResizablePanel defaultSize={75}>
+              <DocumentListPanel
+                folders={mixedContent.folders}
+                documents={mixedContent.documents}
+                breadcrumbPath={breadcrumbPath}
+                selectedDocuments={selectedDocuments}
+                onDocumentSelect={handleDocumentSelect}
+                onDocumentOpen={handleDocumentOpen}
+                onFolderSelect={handleFolderSelect}
+                onSelectionChange={handleSelectionChange}
+                onBreadcrumbClick={handleBreadcrumbClick}
+                viewMode={viewMode}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        )}
       </div>
 
       {/* Create Folder Wizard */}
