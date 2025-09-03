@@ -32,7 +32,8 @@ import {
   Filter,
   Folder,
   FolderOpen,
-  Archive
+  Archive,
+  ChevronDown
 } from 'lucide-react';
 import { Document, FolderNode, ViewMode, SortField, SortOrder } from '@/types/storage';
 import { format } from 'date-fns';
@@ -373,37 +374,43 @@ const DocumentListPanel: React.FC<DocumentListPanelProps> = ({
   );
 
   const renderCardView = () => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
       {filteredAndSortedContent.map((item) => {
         if (item.itemType === 'folder') {
           const folder = item as FolderNode & { itemType: 'folder' };
           const FolderIcon = folder.type === 'archived' ? Archive : Folder;
+          const subfolderCount = folder.children?.length || 0;
+          const fileCount = folder.docCount || 0;
+          
           return (
-            <Card 
-              key={`folder-${folder.id}`} 
-              className="cursor-pointer hover:shadow-md transition-all duration-200 border border-border hover:border-primary/30 bg-card"
-              onClick={() => onFolderSelect(folder.id)}
-            >
-              <CardContent className="p-3">
-                <div className="flex justify-between items-start mb-2">
-                  {/* Left side - Title and details */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium text-foreground truncate" title={folder.name}>
-                      {folder.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {folder.size}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {format(folder.created, 'MMM dd, yyyy')}
-                    </p>
-                  </div>
-                  
-                  {/* Right side - Icon */}
-                  <div className="flex-shrink-0 ml-2">
-                    <FolderIcon className="w-6 h-6 text-blue-600" />
-                  </div>
-                </div>
+             <Card 
+               key={`folder-${folder.id}`} 
+               className="cursor-pointer hover:shadow-md transition-all duration-200 border border-border hover:border-primary/30 bg-card relative group"
+               onClick={() => onFolderSelect(folder.id)}
+             >
+                <CardContent className="p-3">
+                  {/* Folder icon and details */}
+                  <div className="flex items-start space-x-3">
+                   {/* Folder icon - left */}
+                   <div className="flex-shrink-0">
+                     <div className="w-8 h-8 rounded-md flex items-center justify-center text-blue-600 bg-blue-50">
+                       <FolderIcon className="w-4 h-4" />
+                     </div>
+                   </div>
+                   
+                   {/* Folder details - right */}
+                   <div className="flex-1 min-w-0">
+                     <h3 className="text-sm font-medium text-foreground truncate" title={folder.name}>
+                       {folder.name}
+                     </h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {folder.size} • {subfolderCount} Folder{subfolderCount !== 1 ? 's' : ''}, {fileCount} File{fileCount !== 1 ? 's' : ''}
+                      </p>
+                     <p className="text-xs text-muted-foreground mt-1">
+                       {format(folder.created, 'MMM dd, yyyy')}
+                     </p>
+                   </div>
+                 </div>
               </CardContent>
             </Card>
           );
@@ -416,39 +423,42 @@ const DocumentListPanel: React.FC<DocumentListPanelProps> = ({
               className="cursor-pointer hover:shadow-md transition-all duration-200 border border-border hover:border-primary/30 bg-card relative group"
               onClick={() => onDocumentOpen(document)}
             >
-              <CardContent className="p-3">
-                {/* Checkbox for selection */}
-                <div 
-                  className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Checkbox
-                    checked={selectedDocuments.has(document.id)}
-                    onCheckedChange={(checked) => handleDocumentCheck(document.id, checked as boolean)}
-                  />
-                </div>
-                
-                <div className="flex justify-between items-start">
-                  {/* Left side - Title and details */}
-                  <div className="flex-1 min-w-0 pr-2">
-                    <h3 className="text-sm font-medium text-foreground truncate" title={document.name}>
-                      {document.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {document.size}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {format(document.modified, 'MMM dd, yyyy')}
-                    </p>
-                  </div>
-                  
-                  {/* Right side - Icon with type color background */}
-                  <div className="flex-shrink-0">
-                    <div className={`w-8 h-8 rounded-md flex items-center justify-center ${getFileTypeColor(document.type)}`}>
-                      <FileIcon className="w-4 h-4" />
-                    </div>
-                  </div>
-                </div>
+               <CardContent className="p-3">
+                  {/* Checkbox for selection - top right */}
+                   <div 
+                     className={`absolute top-2 right-2 transition-opacity z-10 ${
+                       hasSelectedDocuments ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                     }`}
+                     onClick={(e) => e.stopPropagation()}
+                   >
+                   <Checkbox
+                     checked={selectedDocuments.has(document.id)}
+                     onCheckedChange={(checked) => handleDocumentCheck(document.id, checked as boolean)}
+                   />
+                 </div>
+                 
+                 {/* Document icon and details */}
+                 <div className="flex items-start space-x-3">
+                   {/* Document icon - left */}
+                   <div className="flex-shrink-0">
+                     <div className={`w-8 h-8 rounded-md flex items-center justify-center ${getFileTypeColor(document.type)}`}>
+                       <FileIcon className="w-4 h-4" />
+                     </div>
+                   </div>
+                   
+                    {/* Document details - right */}
+                    <div className="flex-1 min-w-0 pr-8">
+                      <h3 className="text-sm font-medium text-foreground truncate" title={document.name}>
+                        {document.name}
+                      </h3>
+                     <p className="text-xs text-muted-foreground mt-1">
+                       {document.size}
+                     </p>
+                     <p className="text-xs text-muted-foreground mt-1">
+                       {format(document.modified, 'MMM dd, yyyy')}
+                     </p>
+                   </div>
+                 </div>
               </CardContent>
             </Card>
           );
@@ -492,36 +502,55 @@ const DocumentListPanel: React.FC<DocumentListPanelProps> = ({
 
       </div>
 
-        {/* Bulk Actions */}
-        {hasSelectedDocuments && (
-          <div className="flex items-center space-x-2 p-2 bg-muted rounded-md">
-            <span className="text-sm font-medium">
-              {selectedDocuments.size} document{selectedDocuments.size > 1 ? 's' : ''} selected
-            </span>
-            <div className="flex items-center space-x-1 ml-4">
-              <Button variant="outline" size="sm">
-                <Move className="w-4 h-4 mr-2" />
-                Move Files
-              </Button>
-              <Button variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Download All
-              </Button>
-              <Button variant="outline" size="sm" className="text-destructive">
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </Button>
-            </div>
-          </div>
-        )}
-
       {/* Document List */}
       <div className="flex-1 overflow-y-auto p-4">
         {/* Folder Title */}
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <h1 className="text-xl font-semibold text-foreground">
             {breadcrumbPath.length > 0 ? breadcrumbPath[breadcrumbPath.length - 1].name : 'All Files'}
           </h1>
+          
+          {/* Bulk Actions Dropdown */}
+          {hasSelectedDocuments && (
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium">
+                  {selectedDocuments.size} document{selectedDocuments.size > 1 ? 's' : ''} selected
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-6 h-6 p-0 hover:bg-muted"
+                  onClick={() => onSelectionChange(new Set())}
+                >
+                  ✕
+                </Button>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    Bulk Actions
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>
+                    <Move className="w-4 h-4 mr-2" />
+                    Move Files
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download All
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
         </div>
         
         {filteredAndSortedContent.length === 0 ? (

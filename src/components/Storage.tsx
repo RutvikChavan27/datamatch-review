@@ -114,7 +114,7 @@ const Storage: React.FC = () => {
                   <ToggleGroupItem 
                     value="list" 
                     aria-label="List view"
-                    className="data-[state=on]:bg-[#0066A4] data-[state=on]:text-white data-[state=off]:bg-background data-[state=off]:text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200 rounded-md h-7"
+                    className="data-[state=on]:text-primary data-[state=on]:border-primary data-[state=off]:bg-background data-[state=off]:text-muted-foreground data-[state=off]:border-transparent hover:bg-accent hover:text-accent-foreground transition-all duration-200 rounded-md h-7 border-2"
                   >
                     <List className="h-4 w-4" />
                   </ToggleGroupItem>
@@ -129,7 +129,7 @@ const Storage: React.FC = () => {
                   <ToggleGroupItem 
                     value="card" 
                     aria-label="Card view"
-                    className="data-[state=on]:bg-[#0066A4] data-[state=on]:text-white data-[state=off]:bg-background data-[state=off]:text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200 rounded-md h-7"
+                    className="data-[state=on]:text-primary data-[state=on]:border-2 data-[state=on]:border-primary data-[state=off]:bg-background data-[state=off]:text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200 rounded-md h-7"
                   >
                     <Grid3x3 className="h-4 w-4" />
                   </ToggleGroupItem>
