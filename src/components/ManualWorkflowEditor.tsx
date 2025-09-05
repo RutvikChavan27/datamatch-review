@@ -420,6 +420,7 @@ export const ManualWorkflowEditor: React.FC<ManualWorkflowEditorProps> = ({
               d="M15 19l-7-7 7-7"
             />
           </svg>
+          {currentStepIndex === 0 ? "Previous" : "Previous"}
         </Button>
 
         {currentStepIndex < steps.length - 1 ? (
@@ -430,6 +431,7 @@ export const ManualWorkflowEditor: React.FC<ManualWorkflowEditorProps> = ({
             size="sm"
             className="shadow-lg"
           >
+            Next
             <svg
               className="w-4 h-4"
               fill="none"
@@ -452,6 +454,7 @@ export const ManualWorkflowEditor: React.FC<ManualWorkflowEditorProps> = ({
             size="sm"
             className="shadow-lg"
           >
+            Save Template
             <svg
               className="w-4 h-4"
               fill="none"

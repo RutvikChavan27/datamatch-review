@@ -300,7 +300,7 @@ export const TemplateWorkflowEditor: React.FC<TemplateWorkflowEditorProps> = ({
       />
 
       <div className="flex-1 flex">
-        <div className="flex-1 pb-32 pt-6 px-6 max-h-[calc(100vh-60px)] overflow-y-auto">
+        <div className="flex-1 pb-20 pt-6 px-6 max-h-[calc(100vh-60px)] overflow-y-auto">
           <div className="max-w-4xl mx-auto space-y-4">
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
@@ -326,7 +326,7 @@ export const TemplateWorkflowEditor: React.FC<TemplateWorkflowEditorProps> = ({
               type="single"
               value={activeAccordion}
               onValueChange={handleAccordionChange}
-              className="space-y-4 "
+              className="space-y-4"
               collapsible
             >
               {steps.map((step) => (
@@ -412,6 +412,7 @@ export const TemplateWorkflowEditor: React.FC<TemplateWorkflowEditorProps> = ({
               d="M15 19l-7-7 7-7"
             />
           </svg>
+          {currentStepIndex === 0 ? "Previous" : "Previous"}
         </Button>
 
         {currentStepIndex < steps.length - 1 ? (
@@ -422,6 +423,7 @@ export const TemplateWorkflowEditor: React.FC<TemplateWorkflowEditorProps> = ({
             size="sm"
             className="shadow-lg"
           >
+            Next
             <svg
               className="w-4 h-4"
               fill="none"
@@ -444,6 +446,7 @@ export const TemplateWorkflowEditor: React.FC<TemplateWorkflowEditorProps> = ({
             size="sm"
             className="shadow-lg"
           >
+            Save Template
             <svg
               className="w-4 h-4"
               fill="none"

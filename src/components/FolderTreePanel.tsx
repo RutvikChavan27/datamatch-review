@@ -1,26 +1,31 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  HardDrive, 
-  FolderOpen, 
-  Folder, 
-  Plus, 
-  ChevronRight, 
-  ChevronDown, 
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  HardDrive,
+  FolderOpen,
+  Folder,
+  Plus,
+  ChevronRight,
+  ChevronDown,
   MoreHorizontal,
   Building2,
   Archive,
-  Star
-} from 'lucide-react';
-import { FolderNode } from '@/types/storage';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+  Star,
+} from "lucide-react";
+import { FolderNode } from "@/types/storage";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 interface FolderTreePanelProps {
   rootFolder: FolderNode;
@@ -40,9 +45,9 @@ interface FolderItemProps {
 }
 
 const getFolderIcon = (folder: FolderNode, isExpanded: boolean) => {
-  if (folder.type === 'storage') return HardDrive;
-  if (folder.type === 'department') return isExpanded ? FolderOpen : Folder;
-  if (folder.type === 'archived') return Archive;
+  if (folder.type === "storage") return HardDrive;
+  if (folder.type === "department") return isExpanded ? FolderOpen : Folder;
+  if (folder.type === "archived") return Archive;
   return isExpanded ? FolderOpen : Folder;
 };
 
@@ -53,7 +58,7 @@ const FolderItem: React.FC<FolderItemProps> = ({
   selectedFolderId,
   onSelect,
   expandedFolders,
-  onToggleExpand
+  onToggleExpand,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const hasChildren = folder.children && folder.children.length > 0;
@@ -75,11 +80,10 @@ const FolderItem: React.FC<FolderItemProps> = ({
     <div>
       <div
         className={`px-2 py-2 cursor-pointer rounded-md transition-colors duration-200 group relative border ${
-          isSelected 
-            ? 'bg-primary/10 border-primary/20 text-primary' 
-            : 'hover:bg-muted/50 border-transparent'
+          isSelected
+            ? "bg-primary/10 border-primary/20 text-primary"
+            : "hover:bg-muted/50 border-transparent"
         }`}
-        style={{ paddingLeft: `${8 + level * 16}px` }}
         onClick={handleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -108,26 +112,36 @@ const FolderItem: React.FC<FolderItemProps> = ({
           </div>
 
           {/* Folder Icon */}
-          <Icon className={`w-4 h-4 mr-2 flex-shrink-0 ${
-            folder.type === 'storage' ? 'text-slate-600' :
-            folder.type === 'department' ? 'text-blue-600' :
-            folder.type === 'archived' ? 'text-amber-600' :
-            'text-blue-600'
-          }`} />
+          <Icon
+            className={`w-4 h-4 mr-2 flex-shrink-0 ${
+              folder.type === "storage"
+                ? "text-slate-600"
+                : folder.type === "department"
+                ? "text-blue-600"
+                : folder.type === "archived"
+                ? "text-amber-600"
+                : "text-blue-600"
+            }`}
+          />
 
           {/* Folder Name */}
-          <span className="flex-1 text-sm font-medium truncate">
+          <span
+            className="flex-1 text-sm font-medium truncate"
+            style={{ fontSize: "0.875rem", lineHeight: "1.25rem" }}
+          >
             {folder.name}
           </span>
 
-          {/* More Options Button */}
-          {(isHovered || isSelected) && folder.id !== 'root' && (
+          {/* More Options Button - Always reserve space */}
+          {folder.id !== "root" && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={handleMoreOptions}>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-6 h-6 p-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className={`w-6 h-6 p-0 ml-1 transition-opacity ${
+                    isHovered || isSelected ? "opacity-100" : "opacity-0"
+                  }`}
                 >
                   <MoreHorizontal className="w-3 h-3" />
                 </Button>
@@ -141,14 +155,14 @@ const FolderItem: React.FC<FolderItemProps> = ({
                   <Star className="w-4 h-4 mr-2" />
                   Add to Favorites
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  Rename Folder
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  Properties
-                </DropdownMenuItem>
+                <DropdownMenuItem>Rename Folder</DropdownMenuItem>
+                <DropdownMenuItem>Properties</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+          {/* Reserve space for root folder */}
+          {folder.id === "root" && (
+            <div className="w-6 h-6 ml-1"></div>
           )}
         </div>
 
@@ -156,9 +170,15 @@ const FolderItem: React.FC<FolderItemProps> = ({
         <div className="flex items-center gap-1 ml-11 text-xs text-muted-foreground mt-1">
           <span className="font-medium">{folder.size}</span>
           <span>•</span>
-          <span className="font-medium">{folder.docCount.toLocaleString()}</span>
+          <span className="font-medium">
+            {folder.docCount.toLocaleString()}
+          </span>
           <svg className="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+            <path
+              fillRule="evenodd"
+              d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+              clipRule="evenodd"
+            />
           </svg>
         </div>
       </div>
@@ -188,10 +208,10 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
   rootFolder,
   selectedFolderId,
   onFolderSelect,
-  onCreateFolder
+  onCreateFolder,
 }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
-    new Set(['root', 'finance', 'hr', 'operations', 'it', 'legal'])
+    new Set(["root", "finance", "hr", "operations", "it", "legal"])
   );
 
   const handleToggleExpand = (folderId: string) => {
@@ -235,7 +255,9 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
         <div className="text-xs text-muted-foreground space-y-1">
           <div className="flex justify-between">
             <span>Total Documents:</span>
-            <span className="font-medium">{rootFolder.docCount.toLocaleString()}</span>
+            <span className="font-medium">
+              {rootFolder.docCount.toLocaleString()}
+            </span>
           </div>
           <div className="flex justify-between">
             <span>Storage Used:</span>

@@ -22,12 +22,12 @@ export const WorkflowTypeSelection: React.FC<WorkflowTypeSelectionProps> = ({
     <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Main scrollable content */}
       <div className="flex items-center justify-center h-screen">
-        <div className="w-full max-w-6xl p-6">
+        <div className="w-full max-w-6xl p-6 relative">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-3">
               <button
                 onClick={() => (window.location.href = "/?mode=list")}
-                className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent/50"
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent/50 absolute left-4"
                 title="Back to Workflow List"
                 aria-label="Back to Workflow List"
               >
@@ -98,11 +98,7 @@ export const WorkflowTypeSelection: React.FC<WorkflowTypeSelectionProps> = ({
                 </div>
               </div>
 
-              <Button
-                variant="default"
-                size="lg"
-                className="w-full gap-2 font-roboto font-semibold"
-              >
+              <Button className="button-primary" size="sm">
                 <Zap className="w-4 h-4" />
                 Create Simple Workflow
               </Button>
@@ -169,10 +165,7 @@ export const WorkflowTypeSelection: React.FC<WorkflowTypeSelectionProps> = ({
                 </div>
               </div>
 
-              <Button
-                size="lg"
-                className="button-primary w-full gap-2 font-roboto font-semibold"
-              >
+              <Button className="button-primary" size="sm">
                 <Settings className="w-4 h-4" />
                 Create Advanced Workflow
               </Button>

@@ -2337,7 +2337,7 @@ export const SimpleWorkflowWizard: React.FC<SimpleWorkflowWizardProps> = ({
       {/* Content */}
       <div className="flex-1 flex">
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto pb-20 pt-6 px-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="flex-1 pb-20 pt-6 px-6 max-h-[calc(100vh-60px)] overflow-y-auto">
           <div className="max-w-4xl mx-auto space-y-2 pt-2">
             <div className="mb-3">
               {/* Back arrow and heading on same line */}
@@ -2364,7 +2364,7 @@ export const SimpleWorkflowWizard: React.FC<SimpleWorkflowWizardProps> = ({
               type="single"
               value={activeAccordion}
               onValueChange={handleAccordionChange}
-              className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto"
+              className="space-y-4"
               collapsible
             >
               {steps.map((step) => (
@@ -2489,6 +2489,7 @@ export const SimpleWorkflowWizard: React.FC<SimpleWorkflowWizardProps> = ({
               d="M15 19l-7-7 7-7"
             />
           </svg>
+          {currentStepIndex === 0 ? "Previous" : "Previous"}
         </Button>
 
         {currentStepIndex < steps.length - 1 ? (
@@ -2499,6 +2500,7 @@ export const SimpleWorkflowWizard: React.FC<SimpleWorkflowWizardProps> = ({
             size="sm"
             className="shadow-lg"
           >
+            Next
             <svg
               className="w-4 h-4"
               fill="none"
@@ -2521,6 +2523,7 @@ export const SimpleWorkflowWizard: React.FC<SimpleWorkflowWizardProps> = ({
             size="sm"
             className="shadow-lg"
           >
+            Save Template
             <svg
               className="w-4 h-4"
               fill="none"

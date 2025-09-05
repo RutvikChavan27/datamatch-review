@@ -1,28 +1,47 @@
-import React, { useState, useCallback } from 'react';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { List, Grid3x3 } from 'lucide-react';
-import FolderTreePanel from './FolderTreePanel';
-import DocumentListPanel from './DocumentListPanel';
-import CreateFolderWizard from './CreateFolderWizard';
-import DocumentDetailView from './DocumentDetailView';
-import { Document, FolderNode } from '@/types/storage';
-import { mockFolderStructure, getMixedContentForFolder, getBreadcrumbPath } from '@/utils/storageData';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { toast } from 'sonner';
+import React, { useState, useCallback } from "react";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { List, Grid3x3, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import FolderTreePanel from "./FolderTreePanel";
+import DocumentListPanel from "./DocumentListPanel";
+import CreateFolderWizard from "./CreateFolderWizard";
+import DocumentDetailView from "./DocumentDetailView";
+import { Document, FolderNode } from "@/types/storage";
+import {
+  mockFolderStructure,
+  getMixedContentForFolder,
+  getBreadcrumbPath,
+} from "@/utils/storageData";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 const Storage: React.FC = () => {
-  const [selectedFolderId, setSelectedFolderId] = useState<string>('finance');
-  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<string>('list');
-  
+  const [selectedFolderId, setSelectedFolderId] = useState<string>("finance");
+  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(
+    new Set()
+  );
+  const [viewMode, setViewMode] = useState<string>("list");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(
+    null
+  );
 
   // Get current folder data - both subfolders and documents
   const mixedContent = getMixedContentForFolder(selectedFolderId);
   const breadcrumbPath = getBreadcrumbPath(selectedFolderId);
-  
+
   // For card view, get all folders from the tree structure
   const getAllFoldersFromTree = (node: any): any[] => {
     let allFolders = [node];
@@ -33,7 +52,7 @@ const Storage: React.FC = () => {
     }
     return allFolders;
   };
-  
+
   const allFolders = getAllFoldersFromTree(mockFolderStructure);
 
   const handleFolderSelect = useCallback((folderId: string) => {
@@ -54,10 +73,12 @@ const Storage: React.FC = () => {
     setSelectedDocuments(selectedIds);
   }, []);
 
-
-  const handleBreadcrumbClick = useCallback((folderId: string) => {
-    handleFolderSelect(folderId);
-  }, [handleFolderSelect]);
+  const handleBreadcrumbClick = useCallback(
+    (folderId: string) => {
+      handleFolderSelect(folderId);
+    },
+    [handleFolderSelect]
+  );
 
   const handleCreateFolder = useCallback(() => {
     setIsCreateFolderOpen(true);
@@ -65,7 +86,7 @@ const Storage: React.FC = () => {
 
   const handleCreateFolderComplete = useCallback(() => {
     setIsCreateFolderOpen(false);
-    toast.success('Folder created successfully');
+    toast.success("Folder created successfully");
   }, []);
 
   const handleCreateFolderCancel = useCallback(() => {
@@ -91,30 +112,45 @@ const Storage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between py-1 px-4 pt-4">
         <div>
-          <h1 className="text-xl font-semibold text-foreground font-inter">Storage</h1>
+          <h1 className="text-xl font-semibold text-foreground font-inter">
+            Storage
+          </h1>
         </div>
-        
-        {/* View Mode Toggle */}
-        <div className="flex items-center">
+
+        {/* Search and View Mode Toggle */}
+        <div className="flex items-center gap-3">
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search files and folders..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 w-64"
+            />
+          </div>
+
           <TooltipProvider>
-            <ToggleGroup 
-              type="single" 
-              value={viewMode} 
+            <ToggleGroup
+              type="single"
+              value={viewMode}
               onValueChange={(value) => {
-                console.log('Toggle changed to:', value);
+                console.log("Toggle changed to:", value);
                 if (value) {
                   setViewMode(value);
-                  console.log('ViewMode set to:', value);
+                  console.log("ViewMode set to:", value);
                 }
               }}
               className="bg-background rounded-lg p-1 border h-9"
             >
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <ToggleGroupItem 
-                    value="list" 
+                  <ToggleGroupItem
+                    value="list"
                     aria-label="List view"
-                    className="data-[state=on]:text-primary data-[state=on]:border-primary data-[state=off]:bg-background data-[state=off]:text-muted-foreground data-[state=off]:border-transparent hover:bg-accent hover:text-accent-foreground transition-all duration-200 rounded-md h-7 border-2"
+                    className={`data-[state=on]:text-primary data-[state=on]:border-primary data-[state=off]:bg-background data-[state=off]:text-muted-foreground data-[state=off]:border-transparent hover:bg-accent hover:text-accent-foreground transition-all duration-200 rounded-md h-7 ${
+                      viewMode !== "card" && "border-2"
+                    }`}
                   >
                     <List className="h-4 w-4" />
                   </ToggleGroupItem>
@@ -123,13 +159,15 @@ const Storage: React.FC = () => {
                   <p>List view</p>
                 </TooltipContent>
               </Tooltip>
-              
+
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <ToggleGroupItem 
-                    value="card" 
+                  <ToggleGroupItem
+                    value="card"
                     aria-label="Card view"
-                    className="data-[state=on]:text-primary data-[state=on]:border-2 data-[state=on]:border-primary data-[state=off]:bg-background data-[state=off]:text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200 rounded-md h-7"
+                    className={`data-[state=on]:text-primary data-[state=on]:border-2 data-[state=on]:border-primary data-[state=off]:bg-background data-[state=off]:text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200 rounded-md h-7 ${
+                      viewMode === "card" && "border-2"
+                    }`}
                   >
                     <Grid3x3 className="h-4 w-4" />
                   </ToggleGroupItem>
@@ -142,10 +180,10 @@ const Storage: React.FC = () => {
           </TooltipProvider>
         </div>
       </div>
-      
+
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        {viewMode === 'card' ? (
+        {viewMode === "card" ? (
           <DocumentListPanel
             folders={mixedContent.folders}
             documents={mixedContent.documents}

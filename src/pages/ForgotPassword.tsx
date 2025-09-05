@@ -26,7 +26,7 @@ const ForgotPassword = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{
-      backgroundImage: 'linear-gradient(to bottom right, rgba(248, 250, 252, 0.3), rgba(219, 234, 254, 0.3), rgba(199, 210, 254, 0.3)), url(/lovable-uploads/d46396b4-e874-4b0a-a6ca-8a0d8a14c135.png)',
+      backgroundImage: 'linear-gradient(to bottom right, hsl(var(--primary) / 0.1), hsl(var(--primary) / 0.2), hsl(var(--background) / 0.3)), url(/lovable-uploads/876af0c6-75c3-4f4e-923e-5d0b0009f3fe.png)',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
@@ -39,7 +39,7 @@ const ForgotPassword = () => {
               <img 
                 src="/lovable-uploads/c24bf7a8-2cc8-4ae6-9497-8bc1716e1451.png" 
                 alt="MaxxLogix Logo"
-                className="h-10"
+                className="h-16"
               />
             </div>
             <h1 className="text-2xl font-semibold text-gray-900 mb-2">Forgot Password</h1>
@@ -90,6 +90,11 @@ const ForgotPassword = () => {
             </form>
           </CardContent>
         </Card>
+      </div>
+      
+      {/* Footer */}
+      <div className="fixed bottom-0 left-0 py-2 px-4 z-40">
+        <div className="text-sm text-muted-foreground">Powered by MaxxLogix™</div>
       </div>
     </div>
   );
