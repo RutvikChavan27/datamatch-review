@@ -95,7 +95,8 @@ export const WorkflowSummary: React.FC<WorkflowSummaryProps> = ({
           onClick={onComplete}
           disabled={!isComplete}
           className="w-full"
-          size="lg"
+          variant="default"
+          size="sm"
         >
           <CheckCircle className="w-4 h-4 mr-2" />
           {getButtonText()}

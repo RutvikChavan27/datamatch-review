@@ -300,18 +300,18 @@ export const TemplateWorkflowEditor: React.FC<TemplateWorkflowEditorProps> = ({
       />
 
       <div className="flex-1 flex">
+        <button
+          onClick={() => window.history.back()}
+          className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent/50 absolute left-0 right-0 w-fit"
+          title="Back to Workflow List"
+          aria-label="Back to Workflow List"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
         <div className="flex-1 pb-20 pt-6 px-6 max-h-[calc(100vh-60px)] overflow-y-auto">
           <div className="max-w-4xl mx-auto space-y-4">
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
-                <button
-                  onClick={() => window.history.back()}
-                  className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent/50"
-                  title="Back to Workflow List"
-                  aria-label="Back to Workflow List"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
                 <h2 className="text-2xl font-bold text-foreground">
                   Edit Workflow Template
                 </h2>

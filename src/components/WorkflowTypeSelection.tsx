@@ -21,18 +21,18 @@ export const WorkflowTypeSelection: React.FC<WorkflowTypeSelectionProps> = ({
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Main scrollable content */}
-      <div className="flex items-center justify-center h-screen">
-        <div className="w-full max-w-6xl p-6 relative">
+      <button
+        onClick={() => (window.location.href = "/?mode=list")}
+        className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent/50 absolute left-0"
+        title="Back to Workflow List"
+        aria-label="Back to Workflow List"
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </button>
+      <div className="flex items-center justify-center">
+        <div className="w-full max-w-6xl p-6">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-3">
-              <button
-                onClick={() => (window.location.href = "/?mode=list")}
-                className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent/50 absolute left-4"
-                title="Back to Workflow List"
-                aria-label="Back to Workflow List"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
               <h1 className="text-2xl font-semibold text-foreground font-inter tracking-tight">
                 Create Your Workflow
               </h1>

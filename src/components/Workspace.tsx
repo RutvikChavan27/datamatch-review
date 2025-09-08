@@ -849,20 +849,20 @@ const Workspace = () => {
                 paginatedDocuments.map((document) => (
                   <TableRow 
                     key={document.id} 
-                    className={`cursor-pointer hover:bg-muted/30 ${selectedDocuments.includes(document.id) ? 'bg-muted/50' : ''}`}
+                    className={`h-10 cursor-pointer hover:bg-muted/30 ${selectedDocuments.includes(document.id) ? 'bg-muted/50' : ''}`}
                     onClick={(e) => handleDocumentRowClick(document, e)}
                   >
-                    <TableCell>
+                    <TableCell className="py-2">
                       <Checkbox
                         checked={selectedDocuments.includes(document.id)}
                         onCheckedChange={(checked) => handleSelectDocument(document.id, checked as boolean)}
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{document.documentName}</TableCell>
-                    <TableCell>{document.createdDate}</TableCell>
-                    <TableCell>{document.modifiedDate}</TableCell>
-                    <TableCell>{document.dateAccessed}</TableCell>
-                    <TableCell>
+                    <TableCell className="font-medium py-2">{document.documentName}</TableCell>
+                    <TableCell className="py-2">{document.createdDate}</TableCell>
+                    <TableCell className="py-2">{document.modifiedDate}</TableCell>
+                    <TableCell className="py-2">{document.dateAccessed}</TableCell>
+                    <TableCell className="py-2">
                       <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
@@ -904,15 +904,15 @@ const Workspace = () => {
               ) : activeFilter === 'my-requests' && selectedRequestsFilter === 'drafts' ? (
                 paginatedDraftRequests.length > 0 ? (
                   paginatedDraftRequests.map((draft) => (
-                    <TableRow key={draft.id} className="cursor-pointer hover:bg-muted/30">
-                      <TableCell>
+                    <TableRow key={draft.id} className="h-10 cursor-pointer hover:bg-muted/30">
+                      <TableCell className="py-2">
                         <Checkbox />
                       </TableCell>
-                      <TableCell className="font-medium">{draft.draftName}</TableCell>
-                      <TableCell>{draft.workflowName}</TableCell>
-                      <TableCell>{draft.formName}</TableCell>
-                      <TableCell>{draft.createdDate}</TableCell>
-                      <TableCell>{draft.modifiedDate}</TableCell>
+                      <TableCell className="font-medium py-2">{draft.draftName}</TableCell>
+                      <TableCell className="py-2">{draft.workflowName}</TableCell>
+                      <TableCell className="py-2">{draft.formName}</TableCell>
+                      <TableCell className="py-2">{draft.createdDate}</TableCell>
+                      <TableCell className="py-2">{draft.modifiedDate}</TableCell>
                     </TableRow>
                   ))
                 ) : (
@@ -925,21 +925,21 @@ const Workspace = () => {
               ) : activeFilter === 'my-requests' && selectedRequestsFilter === 'pending' ? (
                 paginatedPendingRequests.length > 0 ? (
                   paginatedPendingRequests.map((request) => (
-                    <TableRow key={request.id} className="cursor-pointer hover:bg-muted/30">
-                      <TableCell>
+                    <TableRow key={request.id} className="h-10 cursor-pointer hover:bg-muted/30">
+                      <TableCell className="py-2">
                         <Checkbox />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-2">
                         {getPriorityBadge(request.priority)}
                       </TableCell>
-                      <TableCell className="font-medium">{request.workflow}</TableCell>
-                      <TableCell>{request.type}</TableCell>
-                      <TableCell>{request.createdDate}</TableCell>
-                      <TableCell>{request.primaryId}</TableCell>
-                      <TableCell>{request.assignedTo}</TableCell>
-                      <TableCell>{getStatusBadge(request.status)}</TableCell>
-                      <TableCell>{request.stepName}</TableCell>
-                      <TableCell>{request.dueDate}</TableCell>
+                      <TableCell className="font-medium py-2">{request.workflow}</TableCell>
+                      <TableCell className="py-2">{request.type}</TableCell>
+                      <TableCell className="py-2">{request.createdDate}</TableCell>
+                      <TableCell className="py-2">{request.primaryId}</TableCell>
+                      <TableCell className="py-2">{request.assignedTo}</TableCell>
+                      <TableCell className="py-2">{getStatusBadge(request.status)}</TableCell>
+                      <TableCell className="py-2">{request.stepName}</TableCell>
+                      <TableCell className="py-2">{request.dueDate}</TableCell>
                     </TableRow>
                   ))
                 ) : (
@@ -952,20 +952,20 @@ const Workspace = () => {
               ) : activeFilter === 'my-requests' && selectedRequestsFilter === 'completed' ? (
                 paginatedCompletedRequests.length > 0 ? (
                   paginatedCompletedRequests.map((request) => (
-                    <TableRow key={request.id} className="cursor-pointer hover:bg-muted/30">
-                      <TableCell>
+                    <TableRow key={request.id} className="h-10 cursor-pointer hover:bg-muted/30">
+                      <TableCell className="py-2">
                         <Checkbox />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-2">
                         {getPriorityBadge(request.priority)}
                       </TableCell>
-                      <TableCell className="font-medium">{request.workflow}</TableCell>
-                      <TableCell>{request.type}</TableCell>
-                      <TableCell>{request.createdDate}</TableCell>
-                      <TableCell>{request.primaryId}</TableCell>
-                      <TableCell>{request.assignedTo}</TableCell>
-                      <TableCell>{getStatusBadge(request.status)}</TableCell>
-                      <TableCell>{request.dueDate}</TableCell>
+                      <TableCell className="font-medium py-2">{request.workflow}</TableCell>
+                      <TableCell className="py-2">{request.type}</TableCell>
+                      <TableCell className="py-2">{request.createdDate}</TableCell>
+                      <TableCell className="py-2">{request.primaryId}</TableCell>
+                      <TableCell className="py-2">{request.assignedTo}</TableCell>
+                      <TableCell className="py-2">{getStatusBadge(request.status)}</TableCell>
+                      <TableCell className="py-2">{request.dueDate}</TableCell>
                     </TableRow>
                   ))
                 ) : (
@@ -979,27 +979,27 @@ const Workspace = () => {
                 paginatedTasks.map((task) => (
                   <TableRow 
                     key={task.id} 
-                    className={`cursor-pointer hover:bg-muted/30 ${selectedTasks.includes(task.id) ? 'bg-muted/50' : ''}`}
+                    className={`h-10 cursor-pointer hover:bg-muted/30 ${selectedTasks.includes(task.id) ? 'bg-muted/50' : ''}`}
                     onClick={(e) => handleRowClick(task.id, e)}
                   >
-                    <TableCell>
+                    <TableCell className="py-2">
                       <Checkbox
                         checked={selectedTasks.includes(task.id)}
                         onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2">
                       <PrioritySelect task={task} />
                     </TableCell>
-                    <TableCell className="font-medium">{task.workflow}</TableCell>
-                    <TableCell>{task.type}</TableCell>
-                    <TableCell>{task.createdDate}</TableCell>
-                    <TableCell>{task.primaryId}</TableCell>
-                    <TableCell>{task.assignedTo}</TableCell>
-                    <TableCell>{getStatusBadge(task.status)}</TableCell>
-                    <TableCell>{task.stepName}</TableCell>
-                    <TableCell>{task.dueDate}</TableCell>
-                    <TableCell>
+                    <TableCell className="font-medium py-2">{task.workflow}</TableCell>
+                    <TableCell className="py-2">{task.type}</TableCell>
+                    <TableCell className="py-2">{task.createdDate}</TableCell>
+                    <TableCell className="py-2">{task.primaryId}</TableCell>
+                    <TableCell className="py-2">{task.assignedTo}</TableCell>
+                    <TableCell className="py-2">{getStatusBadge(task.status)}</TableCell>
+                    <TableCell className="py-2">{task.stepName}</TableCell>
+                    <TableCell className="py-2">{task.dueDate}</TableCell>
+                    <TableCell className="py-2">
                       <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"

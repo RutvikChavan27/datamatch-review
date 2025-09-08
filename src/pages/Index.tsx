@@ -102,12 +102,12 @@ const Index = () => {
         )}
 
         <main
-          className={`flex-1 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 overflow-y-scroll ${
+          className={`flex-1 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 overflow-y-scroll relative ${
             !fullWidth ? "px-4" : ""
           } flex flex-col`}
           style={{ maxHeight: `calc(100vh - 60px)` }}
         >
-          <div className="flex-1">
+          <div className="flex-1 ">
             <Routes>
               {/* Main App Routes */}
               <Route path="/" element={<Workspace />} />

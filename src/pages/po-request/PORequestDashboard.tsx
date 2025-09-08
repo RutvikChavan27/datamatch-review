@@ -160,109 +160,106 @@ const PORequestDashboard = () => {
     }
   };
 
-  // Debug log to see the statuses of POs
-  console.log(
-    "All PO statuses:",
-    mockPurchaseOrders.map((po) => po.status)
-  );
-  console.log(
-    "Discussion POs:",
-    mockPurchaseOrders.filter((po) => po.status === "discussion")
-  );
-  console.log("Current tab:", currentTab);
-  console.log("Filtered POs:", filteredPOs);
-
   return (
-    <div className="space-y-2 px-4 pt-4 pb-2 max-w-full overflow-x-hidden">
-      {/* Clean Header with Statistics */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground font-inter">
-            PO Requests
-          </h1>
-        </div>
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-4 text-sm text-muted-foreground font-roboto">
-            <div className="flex items-center space-x-1">
-              <Calendar className="w-4 h-4" />
-              <span>This Month</span>
-              <span className="font-semibold text-foreground">{allCount}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <DollarSign className="w-4 h-4" />
-              <span>Total Value</span>
-              <span className="font-semibold text-foreground">
-                {formatCurrency(totalValue)}
-              </span>
+    <div className="flex flex-col h-full max-w-full overflow-x-hidden">
+      {/* Header Section */}
+      <div className="space-y-2 px-4 pt-4 pb-2 bg-white">
+        {/* Clean Header with Statistics */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground font-inter">
+              PO Requests
+            </h1>
+          </div>
+          <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4 text-sm text-muted-foreground font-roboto">
+              <div className="flex items-center space-x-1">
+                <Calendar className="w-4 h-4" />
+                <span>This Month</span>
+                <span className="font-semibold text-foreground">
+                  {allCount}
+                </span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <DollarSign className="w-4 h-4" />
+                <span>Total Value</span>
+                <span className="font-semibold text-foreground">
+                  {formatCurrency(totalValue)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Filter Section with Document Matching UI Styling */}
-      <div className="flex items-center justify-between mt-4">
-        {/* Left Side - Modern Tab Filters */}
-        <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-full">
-          {[
-            { key: "all", label: "All Requests", count: allCount },
-            { key: "submitted", label: "In Review", count: inReviewCount },
-            { key: "approved", label: "Approved", count: approvedCount },
-            { key: "rejected", label: "Rejected", count: rejectedCount },
-            {
-              key: "discussion",
-              label: "Ready For Review",
-              count: discussionCount,
-            },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              className={`
-                px-4 py-2 flex items-center gap-2 rounded-full text-sm font-semibold transition-all duration-200 border border-b-2
-                ${
+        {/* Filter Section with Document Matching UI Styling */}
+        <div className="flex items-center justify-between mt-4">
+          {/* Left Side - Modern Tab Filters */}
+          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-full">
+            {[
+              { key: "all", label: "All Requests", count: allCount },
+              { key: "submitted", label: "In Review", count: inReviewCount },
+              { key: "approved", label: "Approved", count: approvedCount },
+              { key: "rejected", label: "Rejected", count: rejectedCount },
+              {
+                key: "discussion",
+                label: "Ready For Review",
+                count: discussionCount,
+              },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                className={`
+                  px-4 py-2 flex items-center gap-2 rounded-full text-sm font-semibold transition-all duration-200 border border-b-2
+                  ${
+                    currentTab === tab.key
+                      ? "text-gray-900 shadow-lg shadow-black/10 border-[#95A3C2]"
+                      : "text-gray-600 hover:text-gray-800 hover:bg-gray-200 border-transparent"
+                  }
+                `}
+                style={
                   currentTab === tab.key
-                    ? "text-gray-900 shadow-lg shadow-black/10 border-[#95A3C2]"
-                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-200 border-transparent"
+                    ? {
+                        backgroundColor: "#D8F1FF",
+                        borderRadius: "19.5px",
+                      }
+                    : {}
                 }
-              `}
-              style={
-                currentTab === tab.key
-                  ? {
-                      backgroundColor: "#D8F1FF",
-                      borderRadius: "19.5px",
-                    }
-                  : {}
-              }
-              onClick={() => setCurrentTab(tab.key as typeof currentTab)}
-            >
-              <span>{tab.label}</span>
-              {getCountBadge(tab.key, tab.count, currentTab === tab.key)}
-            </button>
-          ))}
-        </div>
-
-        {/* Right Side - Search and Filter */}
-        <div className="flex items-center space-x-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 cursor-pointer hover:text-foreground" />
-            <Input
-              placeholder="Search vendor, PO number..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10 h-9 font-roboto w-64"
-            />
+                onClick={() => setCurrentTab(tab.key as typeof currentTab)}
+              >
+                <span>{tab.label}</span>
+                {getCountBadge(tab.key, tab.count, currentTab === tab.key)}
+              </button>
+            ))}
           </div>
 
-          <Button onClick={handleCreateNew}>
-            <Plus className="w-4 h-4 mr-2" />
-            New PO Request
-          </Button>
+          {/* Right Side - Search and Filter */}
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 cursor-pointer hover:text-foreground" />
+              <Input
+                placeholder="Search vendor, PO number..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10 h-9 font-roboto w-64"
+              />
+            </div>
+
+            <Button onClick={handleCreateNew}>
+              <Plus className="w-4 h-4 mr-2" />
+              New PO Request
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* POs Table */}
-      <div className="mt-2">
-        <POTable purchaseOrders={filteredPOs} />
+      {/* Table Section - This will take the remaining space */}
+      <div className="flex-1 min-h-0 px-4 pb-2">
+        <div className="h-full flex flex-col">
+          <div className="flex-1 min-h-0">
+            <POTable purchaseOrders={filteredPOs} />
+          </div>
+        </div>
       </div>
 
       {/* Minimized PO Tab */}

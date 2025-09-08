@@ -2345,7 +2345,7 @@ export const SimpleWorkflowWizard: React.FC<SimpleWorkflowWizardProps> = ({
                 <button
                   onClick={() => setShowExitConfirmation(true)}
                   aria-label="Back to Workflow List"
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-md text-foreground hover:bg-muted/60 transition-colors"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-md text-foreground hover:bg-muted/60 transition-colors absolute left-0 top-0"
                   title="Back to Workflow List"
                 >
                   <ChevronLeft className="w-4 h-4" />
