@@ -22,6 +22,8 @@ import PORequestDashboard from "./po-request/PORequestDashboard";
 import CreatePO from "./po-request/CreatePO";
 import PODetails from "./po-request/PODetails";
 import Confirmation from "./po-request/Confirmation";
+
+import ResetPassword from "./ResetPassword";
 import DocumentPreviewPage from "../components/DocumentPreviewPage";
 import WorkflowsList from "../components/WorkflowsList";
 import ReportsAnalytics from "../components/ReportsAnalytics";
@@ -54,7 +56,10 @@ function useIsAuthPage() {
   const location = useLocation();
   const path = location.pathname;
   return (
-    path === "/login" || path === "/otp-auth" || path === "/forgot-password"
+    path === "/login" ||
+    path === "/otp-auth" ||
+    path === "/forgot-password" ||
+    path === "/reset-password"
   );
 }
 
@@ -84,6 +89,7 @@ const Index = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/otp-auth" element={<OTPAuth />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
       </div>
     );

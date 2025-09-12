@@ -19,33 +19,43 @@ const ForgotPassword = () => {
     // Simulate API call delay
     setTimeout(() => {
       setLoading(false);
-      // Navigate to reset password flow (can be implemented later)
-      navigate('/login');
+      navigate('/reset-password');
     }, 1500);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{
-      backgroundImage: 'linear-gradient(to bottom right, hsl(var(--primary) / 0.1), hsl(var(--primary) / 0.2), hsl(var(--background) / 0.3)), url(/lovable-uploads/876af0c6-75c3-4f4e-923e-5d0b0009f3fe.png)',
+    <div className="min-h-screen flex items-center justify-center p-4 pl-8 md:pl-16" style={{
+      backgroundImage: 'url(/lovable-uploads/6f96d7c5-807b-44ca-89c7-1c7492ab35bc.png)',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
       backgroundAttachment: 'fixed'
     }}>
-      <div className="w-full max-w-md">
-        <Card className="bg-white shadow-2xl border-0 rounded-2xl">
-          <CardHeader className="text-left pb-6 pt-8">
-            <div className="flex items-center justify-start mb-6">
+      <div className="w-[30%] ml-auto mr-16 min-w-[440px]">
+        <Card className="bg-white shadow-2xl border-2 border-white rounded-3xl relative overflow-hidden" style={{
+          backgroundImage: `url(/lovable-uploads/840626b0-2ee3-4c74-be74-32f412aad530.png)`,
+          backgroundOrigin: 'border-box',
+          backgroundPosition: 'right -64px top -64px',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: 'calc(100% + 128px) auto'
+        }}>
+          <CardHeader className="text-left pb-8 pt-12 px-10">
+            <div className="flex items-center justify-between mb-6">
+              <img 
+                src="/lovable-uploads/b67a7bdb-02a4-404b-b798-78b25e423e97.png" 
+                alt="Company Logo"
+                className="w-16 h-16 md:w-20 md:h-20 object-contain"
+              />
               <img 
                 src="/lovable-uploads/c24bf7a8-2cc8-4ae6-9497-8bc1716e1451.png" 
                 alt="MaxxLogix Logo"
-                className="h-16"
+                className="h-8"
               />
             </div>
             <h1 className="text-2xl font-semibold text-gray-900 mb-2">Forgot Password</h1>
             <p className="text-gray-600">Please enter your username to set up a new password.</p>
           </CardHeader>
-          <CardContent className="pb-8">
+          <CardContent className="pb-12 px-10">
             <form onSubmit={handleNext} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="username" className="text-sm font-medium text-gray-700">
@@ -90,6 +100,11 @@ const ForgotPassword = () => {
             </form>
           </CardContent>
         </Card>
+        
+        {/* Subtitle */}
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-900 pt-6">AI Productivity Platform | Powered by MaxxLogix</p>
+        </div>
       </div>
       
       {/* Footer */}

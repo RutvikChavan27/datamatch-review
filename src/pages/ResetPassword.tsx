@@ -6,22 +6,29 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Eye, EyeOff } from 'lucide-react';
 
-const Login = () => {
-  const [username, setUsername] = useState('');
+const ResetPassword = () => {
+  const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleGetOTP = async (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) return;
+    if (!otp || !password || !confirmPassword) return;
+    
+    if (password !== confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
     
     setLoading(true);
     // Simulate API call delay
     setTimeout(() => {
       setLoading(false);
-      navigate('/otp-auth', { state: { username } });
+      navigate('/login');
     }, 1500);
   };
 
@@ -54,22 +61,22 @@ const Login = () => {
                 className="h-8"
               />
             </div>
-            <h1 className="text-2xl font-semibold text-gray-900 mb-2">Login</h1>
-            <p className="text-gray-600">Welcome back! Log in to continue.</p>
+            <h1 className="text-2xl font-semibold text-gray-900 mb-2">Reset Password</h1>
+            <p className="text-gray-600">Please confirm your email and create a new password.</p>
           </CardHeader>
           <CardContent className="pb-12 px-10">
-            <form onSubmit={handleGetOTP} className="space-y-4">
+            <form onSubmit={handleResetPassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-sm font-medium text-gray-700">
-                  Username
+                <Label htmlFor="otp" className="text-sm font-medium text-gray-700">
+                  Enter OTP received on your Email
                 </Label>
                 <Input
-                  id="username"
+                  id="otp"
                   type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
                   className="w-full"
-                  placeholder="Please enter your Username"
+                  placeholder="Please enter your OTP"
                   required
                 />
               </div>
@@ -85,7 +92,7 @@ const Login = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pr-10"
-                    placeholder="Please enter your Password"
+                    placeholder="Please enter your new Password"
                     required
                   />
                   <button
@@ -98,11 +105,35 @@ const Login = () => {
                 </div>
               </div>
               
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full pr-10"
+                    placeholder="Please confirm your new Password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              
               <Button
                 type="submit"
                 size="lg"
                 className="w-full mt-6"
-                disabled={loading || !username || !password}
+                disabled={loading || !otp || !password || !confirmPassword}
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
@@ -110,16 +141,16 @@ const Login = () => {
                     Processing...
                   </div>
                 ) : (
-                  'Get OTP'
+                  'RESET PASSWORD'
                 )}
               </Button>
               
               <div className="text-center mt-4">
                 <Link
-                  to="/forgot-password"
+                  to="/login"
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
-                  Forgot Password?
+                  Back to Login
                 </Link>
               </div>
             </form>
@@ -135,4 +166,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default ResetPassword;
