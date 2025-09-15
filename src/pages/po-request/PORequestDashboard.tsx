@@ -5,9 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import POTable from "@/components/po-request/POTable";
-import { mockPurchaseOrders } from "@/data/mock-data";
 import { Search, Plus, Filter, Calendar, DollarSign } from "lucide-react";
-import { POStatus } from "@/types/po-types";
+import {
+  POStatus,
+  PurchaseOrder,
+  PurchaseOrderSummary,
+} from "@/types/po-types";
+import { poRequestApi } from "@/services/poRequest";
+import { toast } from "sonner";
 
 const PORequestDashboard = () => {
   const navigate = useNavigate();
@@ -15,6 +20,84 @@ const PORequestDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentTab, setCurrentTab] = useState<"all" | POStatus>("all");
   const [hasMinimizedPO, setHasMinimizedPO] = useState(false);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrderSummary[]>(
+    []
+  );
+  const [transformedPOs, setTransformedPOs] = useState<PurchaseOrder[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Status mapping from API to POStatus enum
+  const mapApiStatusToPOStatus = (apiStatus: string): POStatus => {
+    const statusMap: Record<string, POStatus> = {
+      Pending: "discussion",
+      Submitted: "submitted",
+      "In Review": "submitted",
+      Approved: "approved",
+      Rejected: "rejected",
+      Discussion: "discussion",
+      Query: "query",
+    };
+    return statusMap[apiStatus] || "submitted";
+  };
+
+  // Transform API data to match PurchaseOrder interface
+  const transformApiDataToPurchaseOrder = (
+    apiData: PurchaseOrderSummary
+  ): PurchaseOrder => {
+    return {
+      id: apiData.id.toString(),
+      reference: apiData.reference,
+      title: apiData.title,
+      vendor: apiData.vendor.name,
+      department: apiData.department,
+      requestor: apiData.requester,
+      totalAmount: parseFloat(apiData.total),
+      status: mapApiStatusToPOStatus(apiData.status),
+      lineItems: apiData.items.map((item) => ({
+        id: item.id.toString(),
+        itemCode: item.item_code,
+        description: item.description,
+        quantity: item.quantity,
+        uomId: item.uom,
+        unitPrice: parseFloat(item.unit_price),
+        totalPrice: item.quantity * parseFloat(item.unit_price),
+      })),
+      createdAt: new Date(apiData.created_at),
+      updatedAt: new Date(apiData.updated_at),
+      expectedDeliveryDate: apiData.due_date
+        ? new Date(apiData.due_date)
+        : null,
+      deliveryAddress: apiData.address,
+      paymentTerms: apiData.payment_terms,
+      notes: apiData.notes,
+    };
+  };
+
+  // Fetch Purchase Orders from API
+  useEffect(() => {
+    const fetchPOs = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const poData = await poRequestApi.getAll();
+        setPurchaseOrders(poData);
+
+        // Transform API data to match PurchaseOrder interface
+        const transformed = poData.map(transformApiDataToPurchaseOrder);
+        setTransformedPOs(transformed);
+
+        toast.success(`Loaded ${poData.length} purchase orders`);
+      } catch (err) {
+        console.error("Failed to fetch purchase orders:", err);
+        setError("Failed to load purchase orders. Please try again.");
+        toast.error("Failed to load purchase orders");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPOs();
+  }, []);
 
   // Check if there's a minimized PO when the component mounts or location changes
   useEffect(() => {
@@ -32,7 +115,7 @@ const PORequestDashboard = () => {
   };
 
   // Filter POs based on search query and selected tab
-  const filteredPOs = mockPurchaseOrders.filter((po) => {
+  const filteredPOs = transformedPOs.filter((po) => {
     const matchesSearch =
       po.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       po.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -46,17 +129,17 @@ const PORequestDashboard = () => {
   });
 
   // Calculate counts for each tab
-  const allCount = mockPurchaseOrders.length;
-  const inReviewCount = mockPurchaseOrders.filter(
+  const allCount = transformedPOs.length;
+  const inReviewCount = transformedPOs.filter(
     (po) => po.status === "submitted"
   ).length;
-  const approvedCount = mockPurchaseOrders.filter(
+  const approvedCount = transformedPOs.filter(
     (po) => po.status === "approved"
   ).length;
-  const rejectedCount = mockPurchaseOrders.filter(
+  const rejectedCount = transformedPOs.filter(
     (po) => po.status === "rejected"
   ).length;
-  const discussionCount = mockPurchaseOrders.filter(
+  const discussionCount = transformedPOs.filter(
     (po) => po.status === "discussion"
   ).length;
 
@@ -257,7 +340,30 @@ const PORequestDashboard = () => {
       <div className="flex-1 min-h-0 px-4 pb-2">
         <div className="h-full flex flex-col">
           <div className="flex-1 min-h-0">
-            <POTable purchaseOrders={filteredPOs} />
+            {loading ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                  <p className="text-muted-foreground">
+                    Loading purchase orders...
+                  </p>
+                </div>
+              </div>
+            ) : error ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-red-500 mb-2">{error}</p>
+                  <Button
+                    onClick={() => window.location.reload()}
+                    variant="outline"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <POTable purchaseOrders={filteredPOs} />
+            )}
           </div>
         </div>
       </div>

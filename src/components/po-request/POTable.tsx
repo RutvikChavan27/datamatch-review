@@ -127,6 +127,8 @@ const POTable: React.FC<POTableProps> = ({
   const currentPOs = sortedPOs.slice(startIndex, endIndex);
 
   const handleRowClick = (poId: string) => {
+    console.log("poId ", poId);
+
     navigate(`/po-requests/po/${poId}`);
   };
 
@@ -242,7 +244,7 @@ const POTable: React.FC<POTableProps> = ({
                     </div>
                   </TableHead>
                   <TableHead
-                    className="w-[180px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t sticky top-0"
+                    className="w-[150px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t sticky top-0"
                     style={{
                       backgroundColor: "#DFE7F3",
                       borderBottomColor: "#c9d1e0",
@@ -254,7 +256,7 @@ const POTable: React.FC<POTableProps> = ({
                     </div>
                   </TableHead>
                   <TableHead
-                    className="w-[120px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t sticky top-0"
+                    className="w-[180px] font-semibold cursor-pointer hover:bg-muted/50 transition-colors border-r-0 text-sm text-foreground h-12 border-b border-t sticky top-0"
                     style={{
                       backgroundColor: "#DFE7F3",
                       borderBottomColor: "#c9d1e0",

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,40 +46,83 @@ import {
   Minimize,
 } from "lucide-react";
 import { LineItem, PurchaseOrder } from "@/types/po-types";
+import { formatCurrency } from "@/lib/formatters";
+import { useConfig } from "@/contexts/ConfigContext";
 import {
-  vendors,
-  departments,
-  deliveryAddresses,
-  paymentTerms,
-  catalogItems,
-} from "@/data/mock-data";
-// import { formatCurrency } from '@/lib/formatters';
+  deliveryAddressApi,
+  departmentApi,
+  paymentTermApi,
+  unitOfMeasureApi,
+  vendorApi,
+} from "@/services/configurationApi";
+import {
+  poRequestApi,
+  catalogItemsApi,
+  type CatalogItem,
+} from "@/services/poRequest";
+import { catalogItems } from "@/data/mock-data";
 
-// Local formatCurrency function
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-};
-
-// Units of Measure options
-const unitsOfMeasure = [
-  { id: "each", name: "Each" },
-  { id: "box", name: "Box" },
-  { id: "pound", name: "Pound" },
-  { id: "ounce", name: "Ounce" },
-  { id: "gallon", name: "Gallon" },
-  { id: "liter", name: "Liter" },
-  { id: "meter", name: "Meter" },
-  { id: "foot", name: "Foot" },
-  { id: "yard", name: "Yard" },
-  { id: "piece", name: "Piece" },
-  { id: "set", name: "Set" },
-  { id: "unit", name: "Unit" },
-  { id: "case", name: "Case" },
-  { id: "pallet", name: "Pallet" },
+// Fallback Units of Measure options (in case API fails)
+const fallbackUnitsOfMeasure = [
+  { id: 1, name: "Each" },
+  { id: 2, name: "Box" },
+  { id: 3, name: "Pound" },
+  { id: 4, name: "Ounce" },
+  { id: 5, name: "Gallon" },
+  { id: 6, name: "Liter" },
+  { id: 7, name: "Meter" },
+  { id: 8, name: "Foot" },
+  { id: 9, name: "Yard" },
+  { id: 10, name: "Piece" },
+  { id: 11, name: "Set" },
+  { id: 12, name: "Unit" },
+  { id: 13, name: "Case" },
+  { id: 14, name: "Pallet" },
 ];
+
+// Local interfaces for UI state management
+interface ConfigItem {
+  id: string;
+  name: string;
+}
+
+interface UnitOfMeasure {
+  id: number;
+  name: string;
+}
+interface VendorDetails {
+  id: string;
+  name: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  address: string;
+}
+interface DepartmentDetails {
+  id: string;
+  name: string;
+  manager: string;
+  email: string;
+  budgetCode: string;
+}
+interface AddressDetails {
+  id: string;
+  name: string;
+  streetAddress: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+}
+// Loading states
+interface LoadingStates {
+  vendors: boolean;
+  departments: boolean;
+  deliveryAddresses: boolean;
+  paymentTerms: boolean;
+  unitsOfMeasure: boolean;
+  catalogItems: boolean;
+}
 
 interface AddLineItemDialogProps {
   onAddItem: (item: LineItem) => void;
@@ -95,12 +138,55 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(1);
-  const [uom, setUom] = useState<string>("each");
+  const [uom, setUom] = useState<number>(0);
+  const [dynamicUnitsOfMeasure, setDynamicUnitsOfMeasure] = useState<UnitOfMeasure[]>([]);
   const [customItem, setCustomItem] = useState(false);
   const [customItemCode, setCustomItemCode] = useState("");
   const [customDescription, setCustomDescription] = useState("");
   const [customUnitPrice, setCustomUnitPrice] = useState<number>(0);
+  
+  // Loading state for UOM
+  const [loadingUOM, setLoadingUOM] = useState(false);
 
+  // Determine which UOM list to use (API data or fallback)
+  const unitsOfMeasure = dynamicUnitsOfMeasure.length > 0 ? dynamicUnitsOfMeasure : fallbackUnitsOfMeasure;
+
+  // Fetch units of measure data on component mount
+  useEffect(() => {
+    const fetchUnitsOfMeasure = async () => {
+      try {
+        setLoadingUOM(true);
+        const unitsData = await unitOfMeasureApi.getAll();
+
+        // Transform API data to match the UI interface
+        const transformedUnits: UnitOfMeasure[] = unitsData.map((unit) => ({
+          id: Number(unit.id),
+          name: unit.name,
+        }));
+
+        setDynamicUnitsOfMeasure(transformedUnits);
+
+        // Set first UOM as default if available and not already set
+        if (transformedUnits.length > 0 && uom === 0) {
+          setUom(transformedUnits[0].id);
+        }
+
+        toast.success(`Loaded ${transformedUnits.length} units of measure`);
+      } catch (error) {
+        console.error("Error fetching units of measure:", error);
+        toast.error("Failed to load units of measure data");
+
+        // Set default to first fallback UOM if API fails and not already set
+        if (fallbackUnitsOfMeasure.length > 0 && uom === 0) {
+          setUom(fallbackUnitsOfMeasure[0].id);
+        }
+      } finally {
+        setLoadingUOM(false);
+      }
+    };
+
+    fetchUnitsOfMeasure();
+  }, []); // Remove dependencies to prevent infinite loops
   const filteredItems = catalogItems.filter(
     (item) =>
       item.itemCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -118,12 +204,14 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
         return;
       }
 
+      const selectedUom = unitsOfMeasure.find((u) => u.id === uom);
       const newItem: LineItem = {
         id: `custom-${Date.now()}`,
         itemCode: customItemCode,
         description: customDescription,
         quantity,
-        uom: unitsOfMeasure.find((u) => u.id === uom)?.name || "Each",
+        uom: selectedUom?.name || "Each",
+        uomId: selectedUom?.id || unitsOfMeasure[0]?.id,
         unitPrice: customUnitPrice,
         totalPrice: customUnitPrice * quantity,
       };
@@ -136,12 +224,14 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
 
       if (!selectedCatalogItem) return;
 
+      const selectedUom = unitsOfMeasure.find((u) => u.id === uom);
       const newItem: LineItem = {
         id: `${selectedCatalogItem.id}-${Date.now()}`,
         itemCode: selectedCatalogItem.itemCode,
         description: selectedCatalogItem.description,
         quantity,
-        uom: unitsOfMeasure.find((u) => u.id === uom)?.name || "Each",
+        uom: selectedUom?.name || "Each",
+        uomId: selectedUom?.id || unitsOfMeasure[0]?.id,
         unitPrice: selectedCatalogItem.unitPrice,
         totalPrice: selectedCatalogItem.unitPrice * quantity,
       };
@@ -152,7 +242,7 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
     setSearchQuery("");
     setSelectedItemId("");
     setQuantity(1);
-    setUom("each");
+    setUom(unitsOfMeasure[0]?.id || fallbackUnitsOfMeasure[0]?.id || 1);
     setCustomItem(false);
     setCustomItemCode("");
     setCustomDescription("");
@@ -184,15 +274,38 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
         </div>
 
         {!customItem ? (
-          <div className="border rounded-md h-96 overflow-y-auto">
-            <Table>
-              <TableHeader className="sticky top-0 bg-[hsl(var(--table-header-bg))]">
-                <TableRow className="hover:bg-[hsl(var(--table-header-bg))]">
-                  <TableHead className="w-[100px] px-4 py-1.5">
+          <div className="border rounded-md overflow-hidden">
+            <Table className="min-w-full" style={{ tableLayout: "fixed" }}>
+              <TableHeader className="sticky top-0 z-10">
+                <TableRow className="bg-muted/50 border-b border-border hover:bg-muted/50">
+                  <TableHead
+                    className="font-semibold w-[100px] border-r-0 text-sm text-foreground h-12 border-b border-t px-4 py-1.5"
+                    style={{
+                      backgroundColor: "#DFE7F3",
+                      borderBottomColor: "#c9d1e0",
+                      borderTopColor: "#c9d1e0",
+                    }}
+                  >
                     Item Code
                   </TableHead>
-                  <TableHead className="px-4 py-1.5">Description</TableHead>
-                  <TableHead className="text-right px-4 py-1.5">
+                  <TableHead
+                    className="font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4 py-1.5"
+                    style={{
+                      backgroundColor: "#DFE7F3",
+                      borderBottomColor: "#c9d1e0",
+                      borderTopColor: "#c9d1e0",
+                    }}
+                  >
+                    Description
+                  </TableHead>
+                  <TableHead
+                    className="font-semibold text-right border-r-0 text-sm text-foreground h-12 border-b border-t px-4 py-1.5"
+                    style={{
+                      backgroundColor: "#DFE7F3",
+                      borderBottomColor: "#c9d1e0",
+                      borderTopColor: "#c9d1e0",
+                    }}
+                  >
                     Unit Price
                   </TableHead>
                 </TableRow>
@@ -203,18 +316,18 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
                     <TableRow
                       key={item.id}
                       className={cn(
-                        "cursor-pointer h-12",
-                        selectedItemId === item.id ? "bg-po-tableHover" : ""
+                        "cursor-pointer h-12 hover:bg-muted/50 transition-colors",
+                        selectedItemId === item.id ? "bg-muted/30" : ""
                       )}
                       onClick={() => setSelectedItemId(item.id)}
                     >
-                      <TableCell className="font-mono px-5 py-2">
+                      <TableCell className="font-mono text-sm font-medium py-2 border-r-0 text-foreground px-4">
                         {item.itemCode}
                       </TableCell>
-                      <TableCell className="px-5 py-2">
+                      <TableCell className="py-2 border-r-0 text-sm text-foreground px-4">
                         {item.description}
                       </TableCell>
-                      <TableCell className="text-right px-5 py-2">
+                      <TableCell className="text-right font-medium py-2 border-r-0 text-sm text-foreground px-4">
                         {formatCurrency(item.unitPrice)}
                       </TableCell>
                     </TableRow>
@@ -285,16 +398,25 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
           </div>
           <div className="col-span-5 space-y-2">
             <Label htmlFor="uom">Unit of Measure</Label>
-            <Select value={uom} onValueChange={setUom}>
+            <Select
+              value={uom.toString()}
+              onValueChange={(value) => setUom(Number(value))}
+            >
               <SelectTrigger id="uom">
                 <SelectValue placeholder="Select UoM" />
               </SelectTrigger>
               <SelectContent>
-                {unitsOfMeasure.map((unit) => (
-                  <SelectItem key={unit.id} value={unit.id}>
-                    {unit.name}
+                {loadingUOM ? (
+                  <SelectItem value="loading" disabled>
+                    Loading units...
                   </SelectItem>
-                ))}
+                ) : (
+                  unitsOfMeasure.map((unit) => (
+                    <SelectItem key={unit.id} value={unit.id.toString()}>
+                      {unit.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -363,6 +485,7 @@ const loadDraft = (): {
 
 const CreatePO: React.FC = () => {
   const navigate = useNavigate();
+  const { settings } = useConfig();
   const [po, setPo] = useState<Partial<PurchaseOrder>>({
     title: "",
     vendor: "",
@@ -377,6 +500,29 @@ const CreatePO: React.FC = () => {
   const [addItemDialogOpen, setAddItemDialogOpen] = useState(false);
   const [reference, setReference] = useState("");
   const [minimized, setMinimized] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+
+  // Loading states
+  const [loading, setLoading] = useState<LoadingStates>({
+    vendors: false,
+    departments: false,
+    deliveryAddresses: false,
+    paymentTerms: false,
+    unitsOfMeasure: false,
+    catalogItems: false,
+  });
+
+  // Detailed data states
+  const [detailedVendors, setDetailedVendors] = useState<VendorDetails[]>([]);
+  const [detailedDepartments, setDetailedDepartments] = useState<
+    DepartmentDetails[]
+  >([]);
+  const [detailedAddresses, setDetailedAddresses] = useState<AddressDetails[]>(
+    []
+  );
+  const [staticPaymentTerms, setStaticPaymentTerms] = useState<ConfigItem[]>(
+    []
+  );
 
   // Generate a reference number on component mount
   React.useEffect(() => {
@@ -384,6 +530,132 @@ const CreatePO: React.FC = () => {
     const prefix = "PO-";
     const randomNum = Math.floor(10000 + Math.random() * 90000);
     setReference(`${prefix}${randomNum}`);
+  }, []);
+
+  // Fetch vendors data on component mount
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        setLoading((prev) => ({ ...prev, vendors: true }));
+        const vendorsData = await vendorApi.getAll();
+
+        // Transform API data to match the UI interface
+        const transformedVendors: VendorDetails[] = vendorsData.map(
+          (vendor) => ({
+            id: vendor.id.toString(),
+            name: vendor.name,
+            contactPerson: vendor.contact_person || "",
+            email: vendor.email || "",
+            phone: vendor.phone || "",
+            address: vendor.address || "",
+          })
+        );
+
+        setDetailedVendors(transformedVendors);
+        toast.success(`Loaded ${transformedVendors.length} vendors`);
+      } catch (error) {
+        console.error("Error fetching vendors:", error);
+        toast.error("Failed to load vendors data");
+      } finally {
+        setLoading((prev) => ({ ...prev, vendors: false }));
+      }
+    };
+
+    fetchVendors();
+  }, []);
+
+  // Fetch departments data on component mount
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        setLoading((prev) => ({ ...prev, departments: true }));
+        const departmentsData = await departmentApi.getAll();
+
+        // Transform API data to match the UI interface
+        const transformedDepartments: DepartmentDetails[] = departmentsData.map(
+          (department) => ({
+            id: department.id.toString(),
+            name: department.name,
+            manager: department.manager || "",
+            email: department.email || "",
+            budgetCode: department.budget_code || "",
+          })
+        );
+
+        setDetailedDepartments(transformedDepartments);
+        toast.success(`Loaded ${transformedDepartments.length} departments`);
+      } catch (error) {
+        console.error("Error fetching departments:", error);
+        toast.error("Failed to load departments data");
+      } finally {
+        setLoading((prev) => ({ ...prev, departments: false }));
+      }
+    };
+
+    fetchDepartments();
+  }, []);
+
+  // Fetch delivery addresses data on component mount
+  useEffect(() => {
+    const fetchDeliveryAddresses = async () => {
+      try {
+        setLoading((prev) => ({ ...prev, deliveryAddresses: true }));
+        const addressesData = await deliveryAddressApi.getAll();
+
+        // Transform API data to match the UI interface
+        const transformedAddresses: AddressDetails[] = addressesData.map(
+          (address) => ({
+            id: address.id.toString(),
+            name: address.name,
+            streetAddress: address.street_address,
+            city: address.city,
+            state: address.state,
+            zipCode: address.zip_code,
+            country: address.country,
+          })
+        );
+
+        setDetailedAddresses(transformedAddresses);
+        toast.success(
+          `Loaded ${transformedAddresses.length} delivery addresses`
+        );
+      } catch (error) {
+        console.error("Error fetching delivery addresses:", error);
+        toast.error("Failed to load delivery addresses data");
+      } finally {
+        setLoading((prev) => ({ ...prev, deliveryAddresses: false }));
+      }
+    };
+
+    fetchDeliveryAddresses();
+  }, []);
+
+  // Fetch payment terms data on component mount
+  useEffect(() => {
+    const fetchPaymentTerms = async () => {
+      try {
+        setLoading((prev) => ({ ...prev, paymentTerms: true }));
+        const paymentTermsData = await paymentTermApi.getAll();
+
+        // Transform API data to match the UI interface - storing as static items for now
+        const transformedPaymentTerms: ConfigItem[] = paymentTermsData.map(
+          (term) => ({
+            id: term.id.toString(),
+            name: term.name,
+          })
+        );
+
+        setStaticPaymentTerms(transformedPaymentTerms);
+        toast.success(`Loaded ${transformedPaymentTerms.length} payment terms`);
+      } catch (error) {
+        console.error("Error fetching payment terms:", error);
+        toast.error("Failed to load payment terms data");
+      } finally {
+        setLoading((prev) => ({ ...prev, paymentTerms: false }));
+      }
+    };
+
+    fetchPaymentTerms();
   }, []);
 
   const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
@@ -450,7 +722,19 @@ const CreatePO: React.FC = () => {
     navigate("/po-requests", { state: { minimizedPO: true } });
   };
 
-  const handleSubmit = () => {
+  // File input handler
+  const handleFilesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = event.target.files;
+    if (!selectedFiles) return;
+    setFiles((prev) => [...prev, ...Array.from(selectedFiles)]);
+  };
+
+  // Remove a file from list
+  const handleRemoveFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
     // Validate required fields
     if (!po.title || !po.vendor || !po.department) {
       toast.error("Please fill in required fields (Title, Vendor, Department)");
@@ -462,19 +746,69 @@ const CreatePO: React.FC = () => {
       return;
     }
 
-    // Navigate to confirmation screen
-    navigate("/po-requests/confirm", {
-      state: {
-        po: {
-          ...po,
-          reference,
-          status: "submitted",
-          totalAmount: calculateTotal(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      },
+    // Transform line items for API
+    const transformedItems = po.lineItems.map((item) => {
+      const transformed = {
+        item_code: item.itemCode,
+        description: item.description,
+        quantity: item.quantity,
+        uom: item.uomId || fallbackUnitsOfMeasure[0]?.id || 1,
+        unit_price: item.unitPrice,
+      };
+      return transformed;
     });
+
+    // Prepare FormData for file uploads
+    const formData = new FormData();
+    formData.append("title", po.title!);
+    formData.append("vendor_id", po.vendor!);
+    formData.append("department", po.department!);
+    if (po.expectedDeliveryDate)
+      formData.append("due_date", po.expectedDeliveryDate.toISOString());
+    if (po.deliveryAddress) formData.append("address", po.deliveryAddress!);
+    if (po.paymentTerms) formData.append("payment_terms", po.paymentTerms!);
+    if (po.notes) formData.append("notes", po.notes);
+    formData.append("total", calculateTotal().toString());
+    formData.append("reference", reference);
+
+    // Append line items (as JSON string or as fields, depending on backend)
+    transformedItems.forEach((item, idx) => {
+      formData.append(`items[${idx}][item_code]`, item.item_code);
+      formData.append(`items[${idx}][description]`, item.description);
+      formData.append(`items[${idx}][quantity]`, item.quantity.toString());
+      formData.append(`items[${idx}][uom]`, item.uom.toString());
+      formData.append(`items[${idx}][unit_price]`, item.unit_price.toString());
+    });
+
+    // Append files
+    files.forEach((file, idx) => {
+      formData.append("documents", file); // "documents" is the field name; adjust per backend requirements
+    });
+
+    try {
+      console.log("formData ", formData);
+
+      // Use fetch or axios for multipart/form-data
+      const response = await poRequestApi.create(formData); // Ensure poRequestApi.create supports FormData
+      toast.success("Purchase order created successfully");
+
+      // Navigate to confirmation screen
+      navigate("/po-requests/confirm", {
+        state: {
+          po: {
+            ...po,
+            reference,
+            status: "submitted",
+            totalAmount: calculateTotal(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error creating purchase order:", error);
+      toast.error("Failed to create purchase order");
+    }
   };
 
   if (minimized) {
@@ -558,11 +892,17 @@ const CreatePO: React.FC = () => {
                   <SelectValue placeholder="Select vendor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {vendors.map((vendor) => (
-                    <SelectItem key={vendor.id} value={vendor.name}>
-                      {vendor.name}
+                  {loading.vendors ? (
+                    <SelectItem value="loading" disabled>
+                      Loading vendors...
                     </SelectItem>
-                  ))}
+                  ) : (
+                    detailedVendors.map((vendor) => (
+                      <SelectItem key={vendor.id} value={vendor.id}>
+                        {vendor.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -573,9 +913,18 @@ const CreatePO: React.FC = () => {
               </Label>
               <Input
                 id="requestor"
-                value="Alex Johnson"
-                readOnly
-                className="h-9 bg-muted/30"
+                value={po.requestor || "Alex Johnson"}
+                readOnly={!settings.isRequestorEditable}
+                onChange={
+                  settings.isRequestorEditable
+                    ? (e) => setPo({ ...po, requestor: e.target.value })
+                    : undefined
+                }
+                className={cn(
+                  "h-9",
+                  !settings.isRequestorEditable &&
+                    "bg-gray-100 cursor-not-allowed"
+                )}
               />
             </div>
 
@@ -591,11 +940,17 @@ const CreatePO: React.FC = () => {
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.name}>
-                      {dept.name}
+                  {loading.departments ? (
+                    <SelectItem value="loading" disabled>
+                      Loading departments...
                     </SelectItem>
-                  ))}
+                  ) : (
+                    detailedDepartments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -649,11 +1004,17 @@ const CreatePO: React.FC = () => {
                   <SelectValue placeholder="Select address" />
                 </SelectTrigger>
                 <SelectContent>
-                  {deliveryAddresses.map((address) => (
-                    <SelectItem key={address.id} value={address.name}>
-                      {address.name}
+                  {loading.deliveryAddresses ? (
+                    <SelectItem value="loading" disabled>
+                      Loading addresses...
                     </SelectItem>
-                  ))}
+                  ) : (
+                    detailedAddresses.map((address) => (
+                      <SelectItem key={address.id} value={address.id}>
+                        {address.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -670,11 +1031,17 @@ const CreatePO: React.FC = () => {
                   <SelectValue placeholder="Select terms" />
                 </SelectTrigger>
                 <SelectContent>
-                  {paymentTerms.map((term) => (
-                    <SelectItem key={term.id} value={term.name}>
-                      {term.name}
+                  {loading.paymentTerms ? (
+                    <SelectItem value="loading" disabled>
+                      Loading payment terms...
                     </SelectItem>
-                  ))}
+                  ) : (
+                    staticPaymentTerms.map((term) => (
+                      <SelectItem key={term.id} value={term.id}>
+                        {term.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -685,27 +1052,78 @@ const CreatePO: React.FC = () => {
         <div className="space-y-4 mb-8">
           <h2 className="text-lg font-medium border-b pb-2">Line Items</h2>
 
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-[hsl(var(--table-header-bg))] hover:bg-[hsl(var(--table-header-bg))]">
-                  <TableHead className="w-[100px] px-4 py-1.5">
+          <div className="border rounded-md overflow-hidden">
+            <Table className="min-w-full" style={{ tableLayout: "fixed" }}>
+              <TableHeader className="sticky top-0 z-10">
+                <TableRow className="bg-muted/50 border-b border-border hover:bg-muted/50">
+                  <TableHead
+                    className="font-semibold w-[100px] border-r-0 text-sm text-foreground h-12 border-b border-t px-4 py-1.5"
+                    style={{
+                      backgroundColor: "#DFE7F3",
+                      borderBottomColor: "#c9d1e0",
+                      borderTopColor: "#c9d1e0",
+                    }}
+                  >
                     Item Code
                   </TableHead>
-                  <TableHead className="px-4 py-1.5">Description</TableHead>
-                  <TableHead className="w-[100px] text-right px-4 py-1.5">
+                  <TableHead
+                    className="font-semibold border-r-0 text-sm text-foreground h-12 border-b border-t px-4 py-1.5"
+                    style={{
+                      backgroundColor: "#DFE7F3",
+                      borderBottomColor: "#c9d1e0",
+                      borderTopColor: "#c9d1e0",
+                    }}
+                  >
+                    Description
+                  </TableHead>
+                  <TableHead
+                    className="font-semibold w-[100px] text-right border-r-0 text-sm text-foreground h-12 border-b border-t px-4 py-1.5"
+                    style={{
+                      backgroundColor: "#DFE7F3",
+                      borderBottomColor: "#c9d1e0",
+                      borderTopColor: "#c9d1e0",
+                    }}
+                  >
                     Quantity
                   </TableHead>
-                  <TableHead className="w-[120px] text-right px-4 py-1.5">
+                  <TableHead
+                    className="font-semibold w-[120px] text-right border-r-0 text-sm text-foreground h-12 border-b border-t px-4 py-1.5"
+                    style={{
+                      backgroundColor: "#DFE7F3",
+                      borderBottomColor: "#c9d1e0",
+                      borderTopColor: "#c9d1e0",
+                    }}
+                  >
                     UoM
                   </TableHead>
-                  <TableHead className="w-[120px] text-right px-4 py-1.5">
+                  <TableHead
+                    className="font-semibold w-[120px] text-right border-r-0 text-sm text-foreground h-12 border-b border-t px-4 py-1.5"
+                    style={{
+                      backgroundColor: "#DFE7F3",
+                      borderBottomColor: "#c9d1e0",
+                      borderTopColor: "#c9d1e0",
+                    }}
+                  >
                     Unit Price
                   </TableHead>
-                  <TableHead className="w-[120px] text-right px-4 py-1.5">
+                  <TableHead
+                    className="font-semibold w-[120px] text-right border-r-0 text-sm text-foreground h-12 border-b border-t px-4 py-1.5"
+                    style={{
+                      backgroundColor: "#DFE7F3",
+                      borderBottomColor: "#c9d1e0",
+                      borderTopColor: "#c9d1e0",
+                    }}
+                  >
                     Total
                   </TableHead>
-                  <TableHead className="w-[100px] text-center px-4 py-1.5">
+                  <TableHead
+                    className="font-semibold w-[100px] text-center border-r-0 text-sm text-foreground h-12 border-b border-t px-4 py-1.5"
+                    style={{
+                      backgroundColor: "#DFE7F3",
+                      borderBottomColor: "#c9d1e0",
+                      borderTopColor: "#c9d1e0",
+                    }}
+                  >
                     Actions
                   </TableHead>
                 </TableRow>
@@ -827,16 +1245,58 @@ const CreatePO: React.FC = () => {
 
           <Card>
             <CardContent className="p-6">
-              <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/20 transition-colors">
+              <div
+                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/20 transition-colors"
+                onClick={() =>
+                  document.getElementById("po-file-input")?.click()
+                }
+              >
                 <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
                 <p className="font-medium">Drag & drop files here</p>
                 <p className="text-sm text-muted-foreground">
                   or click to browse
                 </p>
-                <Button variant="secondary" size="sm">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-4"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    document.getElementById("po-file-input")?.click();
+                  }}
+                >
                   Browse Files
                 </Button>
+                <input
+                  id="po-file-input"
+                  type="file"
+                  multiple
+                  style={{ display: "none" }}
+                  onChange={handleFilesChange}
+                />
               </div>
+              {files.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="font-medium mb-2">Selected Files:</h4>
+                  <ul className="list-disc pl-5">
+                    {files.map((file, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-center justify-between mb-1"
+                      >
+                        <span>{file.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFile(idx)}
+                        >
+                          Remove
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </CardContent>
           </Card>
 

@@ -15,12 +15,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { mockPurchaseOrders, mockApprovalFlows, users } from "@/data/mock-data";
+import { users } from "@/data/mock-data";
 import {
   PurchaseOrder,
   POApprovalFlow,
   POApprovalStage,
 } from "@/types/po-types";
+import {
+  poRequestApi,
+  PurchaseOrderSummary,
+  discussionsApi,
+} from "@/services/poRequest";
 // import { formatCurrency } from "@/lib/formatters";
 
 // Local formatCurrency function
@@ -32,7 +37,9 @@ const formatCurrency = (amount: number) => {
 };
 
 import StatusBadge from "@/components/po-request/StatusBadge";
-import ClarificationSection from "@/components/po-request/ClarificationSection";
+import ClarificationSection, {
+  discussionsType,
+} from "@/components/po-request/ClarificationSection";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -93,6 +100,10 @@ const PODetails: React.FC = () => {
   const navigate = useNavigate();
   const [po, setPo] = useState<PurchaseOrder | null>(null);
   const [approvalFlow, setApprovalFlow] = useState<POApprovalFlow | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
   const [previewDocument, setPreviewDocument] = useState<any>(null);
   const [showDocumentPreview, setShowDocumentPreview] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -101,23 +112,29 @@ const PODetails: React.FC = () => {
   const [discussionMessage, setDiscussionMessage] = useState("");
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState("");
+  const [discussions, setDiscussions] = useState<discussionsType[]>([]);
+  const [discussionsLoading, setDiscussionsLoading] = useState(false);
+  const [isStartingDiscussion, setIsStartingDiscussion] = useState(false);
 
   // Initialize notesValue when po is loaded
   useEffect(() => {
-    console.log("useEffect for notesValue triggered, po:", po);
     if (po) {
-      console.log("Setting notesValue to:", po.notes || "");
       setNotesValue(po.notes || "");
     }
   }, [po]);
 
-  // Function to check if PO has ongoing discussion (active discussion with messages)
+  // Function to check if PO has ongoing discussion (multiple messages)
   const hasOngoingDiscussion = (po: PurchaseOrder) => {
-    return (
-      po.discussion &&
-      po.discussion.isActive &&
-      po.discussion.messages.length > 0
-    );
+    // Check if discussions exist and have more than 1 message
+    return discussions && discussions.length > 1;
+  };
+
+  // Function to check if PO has single discussion message (should show ClarificationSection)
+  const hasSingleDiscussion = () => {
+    const hasOneDiscussion = discussions && discussions.length === 1;
+    const statusIsDiscussion = po?.status === "discussion";
+    
+    return hasOneDiscussion || statusIsDiscussion;
   };
 
   // Function to check if PO has discussion request (clarification request without response)
@@ -125,32 +142,115 @@ const PODetails: React.FC = () => {
     return po.clarificationRequest && !po.clarificationRequest.response;
   };
 
-  useEffect(() => {
-    // Find the PO by id
-    const foundPo = mockPurchaseOrders.find((p) => p.id === id);
-    if (foundPo) {
-      setPo(foundPo);
+  // Transform API data to match frontend PurchaseOrder interface
+  const transformApiDataToPO = (
+    apiData: PurchaseOrderSummary
+  ): PurchaseOrder => {
+    return {
+      id: apiData.id.toString(),
+      reference: apiData.reference,
+      title: apiData.title,
+      vendor: apiData.vendor.name,
+      department: apiData.department,
+      requestor: apiData.requester,
+      totalAmount: parseFloat(apiData.total),
+      status: mapApiStatusToPOStatus(apiData.status),
+      lineItems: apiData.items.map((item) => ({
+        id: item.id.toString(),
+        itemCode: item.item_code,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: parseFloat(item.unit_price),
+        totalPrice: item.quantity * parseFloat(item.unit_price),
+        uom: "Each", // Default since API doesn't return UoM name
+      })),
+      createdAt: new Date(apiData.created_at),
+      updatedAt: new Date(apiData.updated_at),
+      expectedDeliveryDate: apiData.due_date
+        ? new Date(apiData.due_date)
+        : undefined,
+      deliveryAddress: apiData.address,
+      paymentTerms: apiData.payment_terms || "Net 30",
+      notes: apiData.notes || "",
+    };
+  };
 
-      // Find the approval flow for the PO
-      const foundFlow = mockApprovalFlows.find((flow) => flow.poId === id);
-      if (foundFlow) {
-        // Ensure all status properties are of the correct type
-        const typedFlow: POApprovalFlow = {
-          ...foundFlow,
-          stages: foundFlow.stages.map((stage) => ({
-            ...stage,
-            status: stage.status as
-              | "pending"
-              | "approved"
-              | "rejected"
-              | "query",
-          })),
-        };
-        setApprovalFlow(typedFlow);
-      }
-    } else {
-      navigate("/po-requests");
+  // Map API status strings to POStatus enum
+  const mapApiStatusToPOStatus = (apiStatus: string) => {
+    const statusMap: Record<string, any> = {
+      // Database status values (lowercase)
+      draft: "draft",
+      pending_review: "submitted",
+      approved: "approved",
+      rejected: "rejected",
+      completed: "approved",
+      discussion: "discussion",
+      // Display status values (capitalized) - for compatibility
+      Draft: "draft",
+      "Pending Review": "submitted",
+      Submitted: "submitted",
+      "In Review": "submitted",
+      Approved: "approved",
+      Rejected: "rejected",
+      Discussion: "discussion",
+      Query: "query",
+    };
+    return statusMap[apiStatus] || "submitted";
+  };
+
+  // Fetch discussions data from API
+  const fetchDiscussions = async () => {
+    if (!id) return;
+
+    try {
+      setDiscussionsLoading(true);
+      const discussionResponse = await discussionsApi.getById(parseInt(id));
+      console.log("discussionResponse in PODetails:", discussionResponse);
+      setDiscussions(discussionResponse || []);
+    } catch (error) {
+      console.error("Error fetching discussions:", error);
+      setDiscussions([]);
+    } finally {
+      setDiscussionsLoading(false);
     }
+  };
+
+  // Fetch PO data from API
+  useEffect(() => {
+    const fetchPOData = async () => {
+      if (!id) {
+        navigate("/po-requests");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        const apiData = await poRequestApi.getById(parseInt(id));
+        const transformedPO = transformApiDataToPO(apiData);
+        setPo(transformedPO);
+
+        // TODO: Fetch approval flow data when API is available
+        // For now, keep approval flow as null since there's no API endpoint
+        setApprovalFlow(null);
+
+        // Fetch discussions
+        await fetchDiscussions();
+
+        toast.success("Purchase order loaded successfully");
+      } catch (error) {
+        console.error("Error fetching PO data:", error);
+        setError("Failed to load purchase order details");
+        toast.error("Failed to load purchase order details");
+        // Navigate back to dashboard on error
+        // navigate("/po-requests");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPOData();
   }, [id, navigate]);
 
   const handleBack = () => {
@@ -180,12 +280,6 @@ const PODetails: React.FC = () => {
 
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    console.log(
-      "handleNotesChange called with:",
-      value,
-      "notesValue state:",
-      notesValue
-    );
     if (value.length <= 500) {
       setNotesValue(value);
     }
@@ -208,53 +302,79 @@ const PODetails: React.FC = () => {
     }
   };
 
-  const handleSendDiscussionMessage = () => {
-    if (discussionMessage.trim()) {
-      // Here you would typically send the message to your backend
-      toast.success("Message sent successfully");
-      setDiscussionMessage("");
-      setShowDiscussionPopover(false);
+  const handleSendDiscussionMessage = async () => {
+    if (discussionMessage.trim() && po) {
+      try {
+        await discussionsApi.create({
+          po_id: parseInt(po.id),
+          message: discussionMessage.trim(),
+          user_name: "Current User", // In a real app, this would come from auth context
+        });
 
-      // Switch to discussion tab after sending message
-      const discussionTab = document.querySelector(
-        '[value="discussion"]'
-      ) as HTMLElement;
-      discussionTab?.click();
+        toast.success("Message sent successfully");
+        setDiscussionMessage("");
+        setShowDiscussionPopover(false);
+
+        // Refresh discussions to show the new message
+        await fetchDiscussions();
+      } catch (error) {
+        console.error("Error sending discussion message:", error);
+        toast.error("Failed to send message");
+      }
     }
   };
 
-  // Mock document data
-  const getAllDocuments = () => {
-    return [
-      {
-        id: "1",
-        name: "Original PO Document_PO-2024-011.pdf",
-        type: "application/pdf",
-        size: 1024000,
-        url: "#",
-        uploader: "John Smith",
-        uploadDate: new Date(2025, 1, 7, 1, 37),
-      },
-      {
-        id: "2",
-        name: "Approval Form.pdf",
-        type: "application/pdf",
-        size: 486000,
-        url: "#",
-        uploader: "John Smith",
-        uploadDate: new Date(2025, 1, 7, 1, 35, 22),
-      },
-      {
-        id: "3",
-        name: "Invoice #INV-2023-0567.pdf",
-        type: "application/pdf",
-        size: 866000,
-        url: "#",
-        uploader: "John Smith",
-        uploadDate: new Date(2025, 1, 7, 1, 30, 15),
-      },
-    ];
+  const handleStartDiscussionRequest = async (message: string) => {
+    // This is called when ClarificationSection successfully starts a discussion
+    toast.success("Discussion started successfully");
+
+    // Refresh discussions to get the updated data
+    await fetchDiscussions();
   };
+  // Fetch documents from API or use fallback data
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      if (!id) return;
+
+      try {
+        setDocumentsLoading(true);
+        const apiDocuments = await poRequestApi.getDocuments(parseInt(id));
+        setDocuments(apiDocuments);
+      } catch (error) {
+        console.warn(
+          "Failed to fetch documents from API, using fallback data:",
+          error
+        );
+        // Fallback to mock data
+        setDocuments([
+          {
+            id: "1",
+            name: `PO Document_${po?.reference || "PO-2024-001"}.pdf`,
+            type: "application/pdf",
+            size: 1024000,
+            url: "#",
+            uploader: po?.requestor || "System",
+            uploadDate: po?.createdAt || new Date(),
+          },
+          {
+            id: "2",
+            name: "Approval Form.pdf",
+            type: "application/pdf",
+            size: 486000,
+            url: "#",
+            uploader: po?.requestor || "System",
+            uploadDate: po?.createdAt || new Date(),
+          },
+        ]);
+      } finally {
+        setDocumentsLoading(false);
+      }
+    };
+
+    if (po) {
+      fetchDocuments();
+    }
+  }, [po, id]);
 
   // Mock recent activity data
   const getRecentActivity = () => {
@@ -280,7 +400,6 @@ const PODetails: React.FC = () => {
     ];
   };
 
-  const documents = getAllDocuments();
   const recentActivity = getRecentActivity();
 
   // Helper function to get icon for document type with Purchase Order Summary styling
@@ -337,6 +456,35 @@ const PODetails: React.FC = () => {
     setPreviewDocument(documents[prevIndex]);
     setCurrentDocumentIndex(prevIndex);
     setZoomLevel(1);
+  };
+
+  const handleStartDiscussion = async () => {
+    if (!po) return;
+    
+    try {
+      setIsStartingDiscussion(true);
+      
+      // Update status via API
+      await poRequestApi.updateStatus(parseInt(po.id), {
+        status: "discussion",
+      });
+      
+      // Update local state to trigger UI re-render
+      const updatedPo = {
+        ...po,
+        status: "discussion" as any,
+        updatedAt: new Date()
+      };
+      setPo(updatedPo);
+      
+      toast.success(`Discussion started for ${po.reference}`);
+      console.log("✅ Discussion started successfully, status updated to:", updatedPo.status);
+    } catch (error) {
+      console.error("❌ Failed to start discussion:", error);
+      toast.error("Failed to start discussion. Please try again.");
+    } finally {
+      setIsStartingDiscussion(false);
+    }
   };
 
   // Function to combine approval flow and history events into a single timeline
@@ -438,8 +586,34 @@ const PODetails: React.FC = () => {
     );
   };
 
-  if (!po) {
-    return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">
+            Loading purchase order details...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !po) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-xl mb-4">⚠️</div>
+          <p className="text-gray-600">{error || "Purchase order not found"}</p>
+          <button
+            onClick={() => navigate("/po-requests")}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Back to PO Requests
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -1181,14 +1355,19 @@ const PODetails: React.FC = () => {
 
               {/* Discussion Tab */}
               <TabsContent value="discussion" className="space-y-6">
-                {hasOngoingDiscussion(po) ? (
-                  // Show ongoing discussion for POs with active discussions
+                {discussionsLoading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading discussions...</p>
+                  </div>
+                ) : hasOngoingDiscussion(po) ? (
+                  // Show ongoing discussion UI for POs with multiple messages
                   <div className="bg-white border rounded-lg p-6 space-y-4">
-                    {/* Render actual discussion messages from po.discussion */}
-                    {po.discussion?.messages.map((message, index) => (
-                      <div key={message.id} className="flex gap-3">
+                    {/* Render actual discussion messages from API */}
+                    {discussions.map((discussion) => (
+                      <div key={discussion.id} className="flex gap-3">
                         <div className="h-10 w-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
-                          {message.author
+                          {discussion.user_name
                             .split(" ")
                             .map((n) => n[0])
                             .join("")}
@@ -1197,18 +1376,23 @@ const PODetails: React.FC = () => {
                           <div className="flex items-center gap-2 mb-1">
                             <User className="h-3 w-3 text-gray-400" />
                             <span className="font-medium text-sm">
-                              {message.author}
+                              {discussion.user_name}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {message.timestamp.toLocaleDateString("en-GB")},{" "}
-                              {message.timestamp.toLocaleTimeString("en-GB", {
+                              {new Date(
+                                discussion.created_at
+                              ).toLocaleDateString("en-GB")}
+                              ,{" "}
+                              {new Date(
+                                discussion.created_at
+                              ).toLocaleTimeString("en-GB", {
                                 hour: "2-digit",
                                 minute: "2-digit",
                               })}
                             </span>
                           </div>
                           <p className="text-sm leading-relaxed">
-                            {message.message}
+                            {discussion.message}
                           </p>
                         </div>
                       </div>
@@ -1228,13 +1412,40 @@ const PODetails: React.FC = () => {
                             <Textarea
                               placeholder="Type your response..."
                               className="flex-1 min-h-[80px] resize-none text-sm"
+                              value={discussionMessage}
+                              onChange={(e) =>
+                                setDiscussionMessage(e.target.value)
+                              }
                             />
-                            <Button variant="primary" size="sm">
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={handleSendDiscussionMessage}
+                              disabled={!discussionMessage.trim()}
+                            >
                               Send
                             </Button>
                           </div>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                ) : hasSingleDiscussion() ? (
+                  // Show message indicating discussion is in right panel
+                  <div className="text-center py-12 space-y-4">
+                    <div className="flex justify-center mb-4">
+                      <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center">
+                        <MessageCircle className="w-8 h-8 text-purple-500" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-medium">
+                        Discussion Request
+                      </h3>
+                      <p className="text-muted-foreground max-w-md mx-auto">
+                        This purchase order has a discussion request. Please
+                        check the right panel for details.
+                      </p>
                     </div>
                   </div>
                 ) : hasDiscussionRequest(po) ? (
@@ -1271,9 +1482,25 @@ const PODetails: React.FC = () => {
                         collaborate with your team.
                       </p>
                     </div>
-                    <Button variant="primary" size="default">
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Start Discussion
+                    <Button
+                      variant="primary"
+                      size="default"
+                      onClick={() => {
+                        handleStartDiscussion();
+                      }}
+                      disabled={isStartingDiscussion}
+                    >
+                      {isStartingDiscussion ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Starting...
+                        </>
+                      ) : (
+                        <>
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Start Discussion
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}
@@ -1284,11 +1511,13 @@ const PODetails: React.FC = () => {
 
         {/* Purchase Order Summary - Right Panel */}
         <div className="bg-white max-w-[307px] ml-2 px-4 py-4 space-y-6 border border-gray-200 shadow-lg h-[calc(100vh)] overflow-y-auto border-t-0">
-          {/* Discussion Request Card - shown when there's an unresolved clarification request */}
-          {hasDiscussionRequest(po) && (
+          {/* Discussion Request Card - shown when discussion length is 1 or PO status is discussion */}
+          {hasSingleDiscussion() && (
             <ClarificationSection
-              clarification={po.clarificationRequest}
-              onRespond={handleClarificationResponse}
+              po={po}
+              onRespond={(message) => {
+                handleStartDiscussionRequest(message);
+              }}
               readOnly={false}
             />
           )}
