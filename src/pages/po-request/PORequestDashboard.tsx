@@ -13,6 +13,7 @@ import {
 } from "@/types/po-types";
 import { poRequestApi } from "@/services/poRequest";
 import { toast } from "sonner";
+import { mockPurchaseOrders } from "@/data/mock-data";
 
 const PORequestDashboard = () => {
   const navigate = useNavigate();
@@ -26,10 +27,12 @@ const PORequestDashboard = () => {
   const [transformedPOs, setTransformedPOs] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [useMockData, setUseMockData] = useState(false);
 
   // Status mapping from API to POStatus enum
   const mapApiStatusToPOStatus = (apiStatus: string): POStatus => {
     const statusMap: Record<string, POStatus> = {
+      // Capitalized versions
       Pending: "discussion",
       Submitted: "submitted",
       "In Review": "submitted",
@@ -37,8 +40,22 @@ const PORequestDashboard = () => {
       Rejected: "rejected",
       Discussion: "discussion",
       Query: "query",
+      // Lowercase versions
+      pending: "discussion",
+      submitted: "submitted",
+      "in review": "submitted",
+      approved: "approved",
+      rejected: "rejected",
+      discussion: "discussion",
+      query: "query",
+      // Database-style versions
+      pending_review: "submitted",
+      draft: "submitted",
+      completed: "approved",
     };
-    return statusMap[apiStatus] || "submitted";
+    const mappedStatus = statusMap[apiStatus] || "submitted";
+    console.log(`🔄 Status mapping: "${apiStatus}" -> "${mappedStatus}"`);
+    return mappedStatus;
   };
 
   // Transform API data to match PurchaseOrder interface
@@ -74,20 +91,30 @@ const PORequestDashboard = () => {
     };
   };
 
-  // Fetch Purchase Orders from API
+  // Fetch Purchase Orders from API or use mock data
   useEffect(() => {
     const fetchPOs = async () => {
       setLoading(true);
       setError(null);
       try {
-        const poData = await poRequestApi.getAll();
-        setPurchaseOrders(poData);
+        if (useMockData) {
+          console.log("🎭 Using Mock Data for testing");
+          console.log("🔍 Mock Data Statuses:", mockPurchaseOrders.map(po => ({ id: po.id, reference: po.reference, status: po.status })));
+          setTransformedPOs(mockPurchaseOrders);
+          toast.success(`Loaded ${mockPurchaseOrders.length} purchase orders (Mock Data)`);
+        } else {
+          const poData = await poRequestApi.getAll();
+          console.log("🔍 Raw API Data:", poData);
+          console.log("🔍 API Status Values:", poData.map(po => ({ id: po.id, status: po.status })));
+          setPurchaseOrders(poData);
 
-        // Transform API data to match PurchaseOrder interface
-        const transformed = poData.map(transformApiDataToPurchaseOrder);
-        setTransformedPOs(transformed);
+          // Transform API data to match PurchaseOrder interface
+          const transformed = poData.map(transformApiDataToPurchaseOrder);
+          console.log("🔍 Transformed Statuses:", transformed.map(po => ({ id: po.id, status: po.status })));
+          setTransformedPOs(transformed);
 
-        toast.success(`Loaded ${poData.length} purchase orders`);
+          toast.success(`Loaded ${poData.length} purchase orders`);
+        }
       } catch (err) {
         console.error("Failed to fetch purchase orders:", err);
         setError("Failed to load purchase orders. Please try again.");
@@ -97,7 +124,7 @@ const PORequestDashboard = () => {
       }
     };
     fetchPOs();
-  }, []);
+  }, [useMockData]);
 
   // Check if there's a minimized PO when the component mounts or location changes
   useEffect(() => {
@@ -142,6 +169,14 @@ const PORequestDashboard = () => {
   const discussionCount = transformedPOs.filter(
     (po) => po.status === "discussion"
   ).length;
+
+  console.log("📊 Tab Counts:", {
+    all: allCount,
+    submitted: inReviewCount,
+    approved: approvedCount,
+    rejected: rejectedCount,
+    discussion: discussionCount
+  });
 
   // Calculate total value of filtered POs
   const totalValue = filteredPOs.reduce((sum, po) => sum + po.totalAmount, 0);
@@ -328,6 +363,13 @@ const PORequestDashboard = () => {
               />
             </div>
 
+            <Button 
+              onClick={() => setUseMockData(!useMockData)}
+              variant="outline"
+              className="mr-2"
+            >
+              {useMockData ? "Use API Data" : "Use Mock Data"}
+            </Button>
             <Button onClick={handleCreateNew}>
               <Plus className="w-4 h-4 mr-2" />
               New PO Request

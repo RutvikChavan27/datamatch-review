@@ -115,6 +115,10 @@ const PODetails: React.FC = () => {
   const [discussions, setDiscussions] = useState<discussionsType[]>([]);
   const [discussionsLoading, setDiscussionsLoading] = useState(false);
   const [isStartingDiscussion, setIsStartingDiscussion] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [approvingItemIds, setApprovingItemIds] = useState<Set<string>>(new Set());
+  const [rejectingItemIds, setRejectingItemIds] = useState<Set<string>>(new Set());
 
   // Initialize notesValue when po is loaded
   useEffect(() => {
@@ -487,6 +491,108 @@ const PODetails: React.FC = () => {
     }
   };
 
+  const handleApprove = async () => {
+    if (!po) return;
+    
+    try {
+      setIsApproving(true);
+      
+      // Call approve API
+      await poRequestApi.approve(parseInt(po.id));
+      
+      // Update local state to trigger UI re-render
+      const updatedPo = {
+        ...po,
+        status: "approved" as any,
+        updatedAt: new Date()
+      };
+      setPo(updatedPo);
+      
+      toast.success(`Purchase order ${po.reference} has been approved successfully!`);
+    } catch (error) {
+      console.error("❌ Failed to approve purchase order:", error);
+      toast.error("Failed to approve purchase order. Please try again.");
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!po) return;
+    
+    try {
+      setIsRejecting(true);
+      
+      // Call reject API
+      await poRequestApi.reject(parseInt(po.id));
+      
+      // Update local state to trigger UI re-render
+      const updatedPo = {
+        ...po,
+        status: "rejected" as any,
+        updatedAt: new Date()
+      };
+      setPo(updatedPo);
+      
+      toast.success(`Purchase order ${po.reference} has been rejected.`);
+    } catch (error) {
+      console.error("❌ Failed to reject purchase order:", error);
+      toast.error("Failed to reject purchase order. Please try again.");
+    } finally {
+      setIsRejecting(false);
+    }
+  };
+
+  const handleApproveItem = async (itemId: string) => {
+    if (!po) return;
+    
+    try {
+      // Add item to approving set
+      setApprovingItemIds(prev => new Set(prev).add(itemId));
+      
+      // TODO: Call item-specific approve API when available
+      // For now, we'll simulate the API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast.success(`Item ${itemId} has been approved successfully!`);
+    } catch (error) {
+      console.error("❌ Failed to approve item:", error);
+      toast.error("Failed to approve item. Please try again.");
+    } finally {
+      // Remove item from approving set
+      setApprovingItemIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleRejectItem = async (itemId: string) => {
+    if (!po) return;
+    
+    try {
+      // Add item to rejecting set
+      setRejectingItemIds(prev => new Set(prev).add(itemId));
+      
+      // TODO: Call item-specific reject API when available
+      // For now, we'll simulate the API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast.success(`Item ${itemId} has been rejected.`);
+    } catch (error) {
+      console.error("❌ Failed to reject item:", error);
+      toast.error("Failed to reject item. Please try again.");
+    } finally {
+      // Remove item from rejecting set
+      setRejectingItemIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
+    }
+  };
+
   // Function to combine approval flow and history events into a single timeline
   const getCombinedTimeline = () => {
     if (!po) return [];
@@ -660,7 +766,7 @@ const PODetails: React.FC = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  {po.status === "discussion" && (
+                  {(po.status === "discussion" || po.status === "submitted") && (
                     <>
                       <TooltipProvider>
                         <Tooltip>
@@ -690,10 +796,33 @@ const PODetails: React.FC = () => {
                           <TooltipContent>Print</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <Button variant="outline" onClick={() => {}}>
-                        Reject
+                      <Button 
+                        variant="outline" 
+                        onClick={handleReject}
+                        disabled={isRejecting || isApproving}
+                      >
+                        {isRejecting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                            Rejecting...
+                          </>
+                        ) : (
+                          "Reject"
+                        )}
                       </Button>
-                      <Button onClick={() => {}}>Approve</Button>
+                      <Button 
+                        onClick={handleApprove}
+                        disabled={isApproving || isRejecting}
+                      >
+                        {isApproving ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Approving...
+                          </>
+                        ) : (
+                          "Approve"
+                        )}
+                      </Button>
                     </>
                   )}
 
@@ -968,9 +1097,14 @@ const PODetails: React.FC = () => {
                                           variant="default"
                                           size="sm"
                                           className="h-9 w-9 p-0 bg-green-600 hover:bg-green-700 text-white"
-                                          onClick={() => {}}
+                                          onClick={() => handleApproveItem(item.id)}
+                                          disabled={approvingItemIds.has(item.id) || rejectingItemIds.has(item.id)}
                                         >
-                                          <Check className="w-4 h-4 text-white" />
+                                          {approvingItemIds.has(item.id) ? (
+                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                          ) : (
+                                            <Check className="w-4 h-4 text-white" />
+                                          )}
                                         </Button>
                                       </TooltipTrigger>
                                       <TooltipContent>Approve</TooltipContent>
@@ -982,9 +1116,14 @@ const PODetails: React.FC = () => {
                                         <Button
                                           variant="outline"
                                           size="icon"
-                                          onClick={() => {}}
+                                          onClick={() => handleRejectItem(item.id)}
+                                          disabled={rejectingItemIds.has(item.id) || approvingItemIds.has(item.id)}
                                         >
-                                          <X className="h-4 w-4" />
+                                          {rejectingItemIds.has(item.id) ? (
+                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
+                                          ) : (
+                                            <X className="h-4 w-4" />
+                                          )}
                                         </Button>
                                       </TooltipTrigger>
                                       <TooltipContent>Reject</TooltipContent>

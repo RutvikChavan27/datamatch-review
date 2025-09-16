@@ -168,6 +168,18 @@ export const poRequestApi = {
     const response = await api.get(`/requester/purchase-orders/${id}/files`);
     return response.data.data;
   },
+
+  // Approve a purchase order
+  approve: async (id: number): Promise<PurchaseOrder> => {
+    const response = await api.post(`/reviewer/purchase-orders/${id}/approve`);
+    return response.data.data;
+  },
+
+  // Reject a purchase order
+  reject: async (id: number): Promise<PurchaseOrder> => {
+    const response = await api.post(`/reviewer/purchase-orders/${id}/reject`);
+    return response.data.data;
+  },
 };
 
 export const discussionsApi = {
