@@ -99,18 +99,33 @@ const PORequestDashboard = () => {
       try {
         if (useMockData) {
           console.log("🎭 Using Mock Data for testing");
-          console.log("🔍 Mock Data Statuses:", mockPurchaseOrders.map(po => ({ id: po.id, reference: po.reference, status: po.status })));
+          console.log(
+            "🔍 Mock Data Statuses:",
+            mockPurchaseOrders.map((po) => ({
+              id: po.id,
+              reference: po.reference,
+              status: po.status,
+            }))
+          );
           setTransformedPOs(mockPurchaseOrders);
-          toast.success(`Loaded ${mockPurchaseOrders.length} purchase orders (Mock Data)`);
+          toast.success(
+            `Loaded ${mockPurchaseOrders.length} purchase orders (Mock Data)`
+          );
         } else {
           const poData = await poRequestApi.getAll();
           console.log("🔍 Raw API Data:", poData);
-          console.log("🔍 API Status Values:", poData.map(po => ({ id: po.id, status: po.status })));
+          console.log(
+            "🔍 API Status Values:",
+            poData.map((po) => ({ id: po.id, status: po.status }))
+          );
           setPurchaseOrders(poData);
 
           // Transform API data to match PurchaseOrder interface
           const transformed = poData.map(transformApiDataToPurchaseOrder);
-          console.log("🔍 Transformed Statuses:", transformed.map(po => ({ id: po.id, status: po.status })));
+          console.log(
+            "🔍 Transformed Statuses:",
+            transformed.map((po) => ({ id: po.id, status: po.status }))
+          );
           setTransformedPOs(transformed);
 
           toast.success(`Loaded ${poData.length} purchase orders`);
@@ -175,7 +190,7 @@ const PORequestDashboard = () => {
     submitted: inReviewCount,
     approved: approvedCount,
     rejected: rejectedCount,
-    discussion: discussionCount
+    discussion: discussionCount,
   });
 
   // Calculate total value of filtered POs
@@ -363,13 +378,13 @@ const PORequestDashboard = () => {
               />
             </div>
 
-            <Button 
+            {/* <Button
               onClick={() => setUseMockData(!useMockData)}
               variant="outline"
               className="mr-2"
             >
               {useMockData ? "Use API Data" : "Use Mock Data"}
-            </Button>
+            </Button> */}
             <Button onClick={handleCreateNew}>
               <Plus className="w-4 h-4 mr-2" />
               New PO Request

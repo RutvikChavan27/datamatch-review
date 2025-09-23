@@ -15,6 +15,7 @@ export interface LineItem {
   uomId?: number; // Unit of Measure ID for API
   unitPrice: number;
   totalPrice: number;
+  status?: "pending" | "approved" | "rejected";
 }
 
 export interface PurchaseOrder {

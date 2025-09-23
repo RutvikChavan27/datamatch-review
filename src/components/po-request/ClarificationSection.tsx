@@ -154,7 +154,7 @@ const ClarificationSection: React.FC<ClarificationSectionProps> = ({
             <div className="flex items-end gap-2">
               <Textarea
                 placeholder="Type your response here..."
-                className="min-h-[40px] resize-none"
+                className="min-h-[40px] resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 value={response}
                 onChange={(e) => setResponse(e.target.value)}
               />

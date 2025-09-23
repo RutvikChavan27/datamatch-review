@@ -1300,6 +1300,27 @@
     @apply bg-accent;
   }
 
+  /* Document Template Classes */
+  .text-document-header {
+    @apply text-gray-900;
+  }
+
+  .text-document-text {
+    @apply text-gray-700;
+  }
+
+  .bg-document-light {
+    @apply bg-gray-50;
+  }
+
+  .border-table-border {
+    @apply border-gray-300;
+  }
+
+  .bg-table-header {
+    @apply bg-gray-100;
+  }
+
   .po-list.compact .list-item {
     @apply p-2 min-h-9;
   }

@@ -36,11 +36,43 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+// Helper function for safe date formatting
+const formatDate = (dateValue: string | Date | undefined | null) => {
+  if (!dateValue) {
+    return "Date not available";
+  }
+
+  try {
+    const date = new Date(dateValue);
+    if (isNaN(date.getTime())) {
+      return "Invalid date";
+    }
+    return {
+      dateStr: date.toLocaleDateString("en-GB"),
+      timeStr: date.toLocaleTimeString("en-GB", { hour12: false }),
+      fullStr: `${date.toLocaleDateString("en-GB")} ${date.toLocaleTimeString(
+        "en-GB",
+        { hour12: false }
+      )}`,
+    };
+  } catch {
+    return "Invalid date";
+  }
+};
+
 import StatusBadge from "@/components/po-request/StatusBadge";
 import ClarificationSection, {
   discussionsType,
 } from "@/components/po-request/ClarificationSection";
 import { toast } from "sonner";
+import html2pdf from "html2pdf.js";
+import {
+  pdfHtmlClassicPO,
+  PurchaseOrderData,
+  POLineItem,
+  pdfHtmlModernPO,
+  pdfHtmlSimplePO,
+} from "@/utils/storageData";
 import {
   ArrowLeft,
   Download,
@@ -117,8 +149,13 @@ const PODetails: React.FC = () => {
   const [isStartingDiscussion, setIsStartingDiscussion] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
-  const [approvingItemIds, setApprovingItemIds] = useState<Set<string>>(new Set());
-  const [rejectingItemIds, setRejectingItemIds] = useState<Set<string>>(new Set());
+  const [approvingItemIds, setApprovingItemIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [rejectingItemIds, setRejectingItemIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [documentLoading, setDocumentLoading] = useState(false);
 
   // Initialize notesValue when po is loaded
   useEffect(() => {
@@ -137,7 +174,7 @@ const PODetails: React.FC = () => {
   const hasSingleDiscussion = () => {
     const hasOneDiscussion = discussions && discussions.length === 1;
     const statusIsDiscussion = po?.status === "discussion";
-    
+
     return hasOneDiscussion || statusIsDiscussion;
   };
 
@@ -343,33 +380,65 @@ const PODetails: React.FC = () => {
       try {
         setDocumentsLoading(true);
         const apiDocuments = await poRequestApi.getDocuments(parseInt(id));
-        setDocuments(apiDocuments);
+
+        // Add Purchase order document if PO status is approved
+        let documentsToShow = [...apiDocuments];
+        if (po?.status === "approved") {
+          documentsToShow.unshift({
+            id: "po-pdf",
+            filename: `Purchase Order - ${po.reference}.pdf`,
+            type: "application/pdf",
+            size: 512000, // Estimated size
+            added_by: "System",
+            created_at: po.createdAt,
+            url: "#", // Will be handled by download function
+            isPurchaseOrder: true, // Flag to identify this special document
+          });
+        }
+
+        setDocuments(documentsToShow);
       } catch (error) {
         console.warn(
           "Failed to fetch documents from API, using fallback data:",
           error
         );
         // Fallback to mock data
-        setDocuments([
+        let fallbackDocs = [
           {
             id: "1",
-            name: `PO Document_${po?.reference || "PO-2024-001"}.pdf`,
+            filename: `PO Document_${po?.reference || "PO-2024-001"}.pdf`,
             type: "application/pdf",
             size: 1024000,
             url: "#",
-            uploader: po?.requestor || "System",
-            uploadDate: po?.createdAt || new Date(),
+            added_by: po?.requestor || "System",
+            created_at: po?.createdAt || new Date(),
           },
           {
             id: "2",
-            name: "Approval Form.pdf",
+            filename: "Approval Form.pdf",
             type: "application/pdf",
             size: 486000,
             url: "#",
-            uploader: po?.requestor || "System",
-            uploadDate: po?.createdAt || new Date(),
+            added_by: po?.requestor || "System",
+            created_at: po?.createdAt || new Date(),
           },
-        ]);
+        ];
+
+        // Add Purchase order document if PO status is approved
+        if (po?.status === "approved") {
+          fallbackDocs.unshift({
+            id: "po-pdf",
+            filename: `Purchase Order - ${po.reference}.pdf`,
+            type: "application/pdf",
+            size: 512000, // Estimated size
+            added_by: "System",
+            created_at: po.createdAt,
+            url: "#", // Will be handled by download function
+            isPurchaseOrder: true, // Flag to identify this special document
+          });
+        }
+
+        setDocuments(fallbackDocs);
       } finally {
         setDocumentsLoading(false);
       }
@@ -445,6 +514,7 @@ const PODetails: React.FC = () => {
     setCurrentDocumentIndex(index);
     setShowDocumentPreview(true);
     setZoomLevel(1);
+    setDocumentLoading(true); // Start with loading state
   };
 
   const handleNextDocument = () => {
@@ -452,6 +522,7 @@ const PODetails: React.FC = () => {
     setPreviewDocument(documents[nextIndex]);
     setCurrentDocumentIndex(nextIndex);
     setZoomLevel(1);
+    setDocumentLoading(true); // Start with loading state
   };
 
   const handlePreviousDocument = () => {
@@ -460,29 +531,33 @@ const PODetails: React.FC = () => {
     setPreviewDocument(documents[prevIndex]);
     setCurrentDocumentIndex(prevIndex);
     setZoomLevel(1);
+    setDocumentLoading(true); // Start with loading state
   };
 
   const handleStartDiscussion = async () => {
     if (!po) return;
-    
+
     try {
       setIsStartingDiscussion(true);
-      
+
       // Update status via API
       await poRequestApi.updateStatus(parseInt(po.id), {
         status: "discussion",
       });
-      
+
       // Update local state to trigger UI re-render
       const updatedPo = {
         ...po,
         status: "discussion" as any,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
       setPo(updatedPo);
-      
+
       toast.success(`Discussion started for ${po.reference}`);
-      console.log("✅ Discussion started successfully, status updated to:", updatedPo.status);
+      console.log(
+        "✅ Discussion started successfully, status updated to:",
+        updatedPo.status
+      );
     } catch (error) {
       console.error("❌ Failed to start discussion:", error);
       toast.error("Failed to start discussion. Please try again.");
@@ -493,22 +568,24 @@ const PODetails: React.FC = () => {
 
   const handleApprove = async () => {
     if (!po) return;
-    
+
     try {
       setIsApproving(true);
-      
+
       // Call approve API
       await poRequestApi.approve(parseInt(po.id));
-      
+
       // Update local state to trigger UI re-render
       const updatedPo = {
         ...po,
         status: "approved" as any,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
       setPo(updatedPo);
-      
-      toast.success(`Purchase order ${po.reference} has been approved successfully!`);
+
+      toast.success(
+        `Purchase order ${po.reference} has been approved successfully!`
+      );
     } catch (error) {
       console.error("❌ Failed to approve purchase order:", error);
       toast.error("Failed to approve purchase order. Please try again.");
@@ -519,21 +596,21 @@ const PODetails: React.FC = () => {
 
   const handleReject = async () => {
     if (!po) return;
-    
+
     try {
       setIsRejecting(true);
-      
+
       // Call reject API
       await poRequestApi.reject(parseInt(po.id));
-      
+
       // Update local state to trigger UI re-render
       const updatedPo = {
         ...po,
         status: "rejected" as any,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
       setPo(updatedPo);
-      
+
       toast.success(`Purchase order ${po.reference} has been rejected.`);
     } catch (error) {
       console.error("❌ Failed to reject purchase order:", error);
@@ -545,22 +622,23 @@ const PODetails: React.FC = () => {
 
   const handleApproveItem = async (itemId: string) => {
     if (!po) return;
-    
+
     try {
       // Add item to approving set
-      setApprovingItemIds(prev => new Set(prev).add(itemId));
-      
+      setApprovingItemIds((prev) => new Set(prev).add(itemId));
+
       // TODO: Call item-specific approve API when available
       // For now, we'll simulate the API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // await new Promise((resolve) => setTimeout(resolve, 1000));
+      await poRequestApi.approveItem(parseInt(po.id));
+
       toast.success(`Item ${itemId} has been approved successfully!`);
     } catch (error) {
       console.error("❌ Failed to approve item:", error);
       toast.error("Failed to approve item. Please try again.");
     } finally {
       // Remove item from approving set
-      setApprovingItemIds(prev => {
+      setApprovingItemIds((prev) => {
         const newSet = new Set(prev);
         newSet.delete(itemId);
         return newSet;
@@ -570,22 +648,22 @@ const PODetails: React.FC = () => {
 
   const handleRejectItem = async (itemId: string) => {
     if (!po) return;
-    
+
     try {
       // Add item to rejecting set
-      setRejectingItemIds(prev => new Set(prev).add(itemId));
-      
+      setRejectingItemIds((prev) => new Set(prev).add(itemId));
+
       // TODO: Call item-specific reject API when available
       // For now, we'll simulate the API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       toast.success(`Item ${itemId} has been rejected.`);
     } catch (error) {
       console.error("❌ Failed to reject item:", error);
       toast.error("Failed to reject item. Please try again.");
     } finally {
       // Remove item from rejecting set
-      setRejectingItemIds(prev => {
+      setRejectingItemIds((prev) => {
         const newSet = new Set(prev);
         newSet.delete(itemId);
         return newSet;
@@ -593,11 +671,96 @@ const PODetails: React.FC = () => {
     }
   };
 
+  // Function to download PO as PDF
+  const handleDownloadPO = async () => {
+    if (!po) return;
+
+    try {
+      // Convert PO data to the required format for PDF template
+      const poData: PurchaseOrderData = {
+        poNumber: po.reference,
+        issueDate: (() => {
+          const formatted = formatDate(po.createdAt);
+          return typeof formatted === "string" ? formatted : formatted.dateStr;
+        })(),
+        deliveryDate: po.expectedDeliveryDate
+          ? po.expectedDeliveryDate.toLocaleDateString("en-GB")
+          : "TBD",
+        clientName: "Company Name", // Replace with actual company data
+        clientAddress: "123 Company Street",
+        clientCity: "City",
+        clientState: "State",
+        clientZip: "12345",
+        clientEmail: "company@example.com",
+        clientWebsite: "www.company.com",
+        vendorName: po.vendor,
+        vendorAddress: "Vendor Address", // Replace with actual vendor data if available
+        vendorCity: "Vendor City",
+        vendorState: "Vendor State",
+        vendorZip: "54321",
+        vendorPhone: "(555) 123-4567",
+        vendorEmail: "vendor@example.com",
+        companyName: "Delivery Company", // Replace with actual delivery data
+        companyAddress: po.deliveryAddress || "123 Main St",
+        companyCity: "Anytown",
+        companyState: "USA",
+        companyZip: "12345",
+        companyPhone: "(555) 987-6543",
+        companyEmail: "delivery@example.com",
+        lineItems: po.lineItems.map(
+          (item): POLineItem => ({
+            id: item.id,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.totalPrice,
+          })
+        ),
+        subtotal: po.totalAmount * 0.9, // Assuming 10% tax, adjust as needed
+        taxRate: 10, // 10% tax rate
+        taxAmount: po.totalAmount * 0.1,
+        shippingCost: 0,
+        total: po.totalAmount,
+        paymentTerms: po.paymentTerms || "Net 30",
+        notes: po.notes,
+        authorizedBy: po.requestor,
+        department: po.department,
+      };
+
+      const element = document.createElement("div");
+      element.innerHTML = pdfHtmlSimplePO(poData);
+      // Generate HTML using the classic template
+      console.log(element);
+
+      // Convert HTML to PDF using html2pdf
+      const opt = {
+        margin: 1,
+        filename: `PurchaseOrder_${po.reference}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          logging: true,
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      };
+
+      // Generate and download PDF
+      await html2pdf().from(element).set(opt).save();
+
+      toast.success(`Purchase order PDF downloaded successfully!`);
+    } catch (error) {
+      console.error("❌ Failed to download PO PDF:", error);
+      toast.error("Failed to download purchase order PDF. Please try again.");
+    }
+  };
+
   // Function to combine approval flow and history events into a single timeline
   const getCombinedTimeline = () => {
     if (!po) return [];
 
-    let timeline = [];
+    const timeline = [];
 
     // Add PO creation event
     timeline.push({
@@ -766,7 +929,8 @@ const PODetails: React.FC = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  {(po.status === "discussion" || po.status === "submitted") && (
+                  {(po.status === "discussion" ||
+                    po.status === "submitted") && (
                     <>
                       <TooltipProvider>
                         <Tooltip>
@@ -796,8 +960,8 @@ const PODetails: React.FC = () => {
                           <TooltipContent>Print</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={handleReject}
                         disabled={isRejecting || isApproving}
                       >
@@ -810,7 +974,7 @@ const PODetails: React.FC = () => {
                           "Reject"
                         )}
                       </Button>
-                      <Button 
+                      <Button
                         onClick={handleApprove}
                         disabled={isApproving || isRejecting}
                       >
@@ -1097,8 +1261,13 @@ const PODetails: React.FC = () => {
                                           variant="default"
                                           size="sm"
                                           className="h-9 w-9 p-0 bg-green-600 hover:bg-green-700 text-white"
-                                          onClick={() => handleApproveItem(item.id)}
-                                          disabled={approvingItemIds.has(item.id) || rejectingItemIds.has(item.id)}
+                                          onClick={() =>
+                                            handleApproveItem(item.id)
+                                          }
+                                          disabled={
+                                            approvingItemIds.has(item.id) ||
+                                            rejectingItemIds.has(item.id)
+                                          }
                                         >
                                           {approvingItemIds.has(item.id) ? (
                                             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
@@ -1116,8 +1285,13 @@ const PODetails: React.FC = () => {
                                         <Button
                                           variant="outline"
                                           size="icon"
-                                          onClick={() => handleRejectItem(item.id)}
-                                          disabled={rejectingItemIds.has(item.id) || approvingItemIds.has(item.id)}
+                                          onClick={() =>
+                                            handleRejectItem(item.id)
+                                          }
+                                          disabled={
+                                            rejectingItemIds.has(item.id) ||
+                                            approvingItemIds.has(item.id)
+                                          }
                                         >
                                           {rejectingItemIds.has(item.id) ? (
                                             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
@@ -1270,9 +1444,9 @@ const PODetails: React.FC = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {recentActivity.map((activity) => (
+                        {documents.map((doc, index) => (
                           <TableRow
-                            key={activity.id}
+                            key={doc.id}
                             className="h-12 hover:bg-muted/50 transition-colors"
                           >
                             <TableCell className="font-roboto text-sm py-2 border-r-0 text-foreground px-4">
@@ -1280,36 +1454,45 @@ const PODetails: React.FC = () => {
                                 <Calendar className="h-3 w-3 text-gray-400" />
                                 <div
                                   className="truncate"
-                                  title={`${activity.dateTime.toLocaleDateString(
-                                    "en-GB"
-                                  )} ${activity.dateTime.toLocaleTimeString(
-                                    "en-GB",
-                                    { hour12: false }
-                                  )}`}
+                                  title={(() => {
+                                    const formatted = formatDate(
+                                      doc.created_at || doc.uploadDate
+                                    );
+                                    return typeof formatted === "string"
+                                      ? formatted
+                                      : formatted.fullStr;
+                                  })()}
                                 >
-                                  {activity.dateTime.toLocaleDateString(
-                                    "en-GB"
-                                  )}{" "}
-                                  {activity.dateTime.toLocaleTimeString(
-                                    "en-GB",
-                                    {
-                                      hour12: false,
+                                  {(() => {
+                                    const formatted = formatDate(
+                                      doc.created_at || doc.uploadDate
+                                    );
+                                    if (typeof formatted === "string") {
+                                      return formatted;
                                     }
-                                  )}
+                                    return (
+                                      <>
+                                        {formatted.dateStr} {formatted.timeStr}
+                                      </>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell className="font-medium py-2 border-r-0 text-sm text-foreground px-4">
-                              <div className="truncate" title={activity.action}>
-                                {activity.action}
+                              <div
+                                className="truncate"
+                                title={"Added Document"}
+                              >
+                                {"Added Document"}
                               </div>
                             </TableCell>
                             <TableCell className="py-2 border-r-0 text-sm text-foreground px-4">
                               <div
                                 className="truncate"
-                                title={activity.description}
+                                title={`${doc.filename} uploaded`}
                               >
-                                {activity.description}
+                                {`${doc.filename} uploaded`}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -1405,8 +1588,8 @@ const PODetails: React.FC = () => {
                             <div className="flex items-center gap-3">
                               {getDocumentIcon(doc.type)}
                               <div className="flex-1 min-w-0">
-                                <div className="truncate" title={doc.name}>
-                                  {doc.name}
+                                <div className="truncate" title={doc.filename}>
+                                  {doc.filename}
                                 </div>
                               </div>
                             </div>
@@ -1417,8 +1600,8 @@ const PODetails: React.FC = () => {
                           <TableCell className="py-2 border-r-0 text-sm text-foreground px-4">
                             <div className="flex items-center gap-1">
                               <User className="h-3 w-3 text-gray-400" />
-                              <div className="truncate" title={doc.uploader}>
-                                {doc.uploader}
+                              <div className="truncate" title={doc.added_by}>
+                                {doc.added_by}
                               </div>
                             </div>
                           </TableCell>
@@ -1427,19 +1610,28 @@ const PODetails: React.FC = () => {
                               <Calendar className="h-3 w-3 text-gray-400" />
                               <div
                                 className="truncate"
-                                title={`${doc.uploadDate.toLocaleDateString(
-                                  "en-GB"
-                                )} ${doc.uploadDate.toLocaleTimeString(
-                                  "en-GB",
-                                  {
-                                    hour12: false,
-                                  }
-                                )}`}
+                                title={(() => {
+                                  const formatted = formatDate(
+                                    doc.created_at || doc.uploadDate
+                                  );
+                                  return typeof formatted === "string"
+                                    ? formatted
+                                    : formatted.fullStr;
+                                })()}
                               >
-                                {doc.uploadDate.toLocaleDateString("en-GB")}{" "}
-                                {doc.uploadDate.toLocaleTimeString("en-GB", {
-                                  hour12: false,
-                                })}
+                                {(() => {
+                                  const formatted = formatDate(
+                                    doc.created_at || doc.uploadDate
+                                  );
+                                  if (typeof formatted === "string") {
+                                    return formatted;
+                                  }
+                                  return (
+                                    <>
+                                      {formatted.dateStr} {formatted.timeStr}
+                                    </>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </TableCell>
@@ -1451,21 +1643,55 @@ const PODetails: React.FC = () => {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() =>
-                                        handlePreviewDocument(doc, index)
-                                      }
+                                      onClick={() => {
+                                        if (doc.isPurchaseOrder) {
+                                          toast.info(
+                                            "Purchase order document can only be downloaded as PDF"
+                                          );
+                                        } else {
+                                          handlePreviewDocument(doc, index);
+                                        }
+                                      }}
                                     >
                                       <Eye className="h-4 w-4" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>View</TooltipContent>
+                                  <TooltipContent>
+                                    {doc.isPurchaseOrder ? "PDF only" : "View"}
+                                  </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
 
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="sm">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        // Check if this is the purchase order document
+                                        if (doc.isPurchaseOrder) {
+                                          handleDownloadPO();
+                                        } else {
+                                          // Handle regular document download
+                                          if (doc.url && doc.url !== "#") {
+                                            const link =
+                                              document.createElement("a");
+                                            link.href = doc.url;
+                                            link.download =
+                                              doc.filename || "document";
+                                            link.target = "_blank";
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                          } else {
+                                            toast.info(
+                                              "Document download not available"
+                                            );
+                                          }
+                                        }
+                                      }}
+                                    >
                                       <Download className="h-4 w-4" />
                                     </Button>
                                   </TooltipTrigger>
@@ -1516,18 +1742,6 @@ const PODetails: React.FC = () => {
                             <User className="h-3 w-3 text-gray-400" />
                             <span className="font-medium text-sm">
                               {discussion.user_name}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(
-                                discussion.created_at
-                              ).toLocaleDateString("en-GB")}
-                              ,{" "}
-                              {new Date(
-                                discussion.created_at
-                              ).toLocaleTimeString("en-GB", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
                             </span>
                           </div>
                           <p className="text-sm leading-relaxed">
@@ -1717,7 +1931,12 @@ const PODetails: React.FC = () => {
                   Created Date
                 </p>
                 <p className="text-sm text-gray-900">
-                  {po.createdAt.toLocaleDateString("en-GB")}
+                  {(() => {
+                    const formatted = formatDate(po.createdAt);
+                    return typeof formatted === "string"
+                      ? formatted
+                      : formatted.dateStr;
+                  })()}
                 </p>
               </div>
             </div>
@@ -1835,7 +2054,12 @@ const PODetails: React.FC = () => {
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {event.user} •{" "}
-                          {event.timestamp.toLocaleDateString("en-GB")}
+                          {(() => {
+                            const formatted = formatDate(event.timestamp);
+                            return typeof formatted === "string"
+                              ? formatted
+                              : formatted.dateStr;
+                          })()}
                         </p>
                         {event.description && (
                           <p className="text-xs text-muted-foreground mt-1">
@@ -1856,49 +2080,84 @@ const PODetails: React.FC = () => {
           open={showDocumentPreview}
           onOpenChange={setShowDocumentPreview}
         >
-          <DialogContent className="max-w-4xl w-full h-[80vh] flex flex-col p-0">
+          <DialogContent className="max-w-4xl w-full h-[80vh] flex flex-col p-0 sm:max-w-[90vw] max-h-[90vh]">
             <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-medium">{previewDocument?.name}</h2>
+              <h2 className="font-medium">{previewDocument?.filename}</h2>
               <div className="flex gap-2">
+                {/* Only show zoom controls for images */}
+                {previewDocument?.type?.startsWith("image/") && (
+                  <>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setZoomLevel(Math.max(0.5, zoomLevel - 0.1))
+                            }
+                          >
+                            <ZoomOut className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Zoom out</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <span className="text-sm mx-2">
+                      {Math.round(zoomLevel * 100)}%
+                    </span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setZoomLevel(Math.min(3, zoomLevel + 0.1))
+                            }
+                          >
+                            <ZoomIn className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Zoom in</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setZoomLevel(1)}
+                          >
+                            <span className="text-xs font-medium">1:1</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Reset zoom</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </>
+                )}
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() =>
-                          setZoomLevel(Math.max(0.5, zoomLevel - 0.1))
-                        }
+                        onClick={() => {
+                          if (previewDocument?.url) {
+                            // Create a temporary link to download the file
+                            const link = document.createElement("a");
+                            link.href = previewDocument.url;
+                            link.download =
+                              previewDocument.filename || "document";
+                            link.target = "_blank";
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }
+                        }}
                       >
-                        <ZoomOut className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Zoom out</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <span className="text-sm mx-2">
-                  {Math.round(zoomLevel * 100)}%
-                </span>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setZoomLevel(Math.min(2, zoomLevel + 0.1))
-                        }
-                      >
-                        <ZoomIn className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Zoom in</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="sm">
                         <Download className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
@@ -1908,22 +2167,111 @@ const PODetails: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex-1 bg-gray-100 flex justify-center items-center overflow-auto">
-              <div
-                className="p-4 bg-white shadow-lg transition-transform"
-                style={{ transform: `scale(${zoomLevel})` }}
-              >
-                {/* Mock document preview - in a real app, this would render the actual document */}
-                <div className="w-[600px] h-[800px] bg-white border flex items-center justify-center">
-                  <div className="text-center">
+            <div className="flex-1 bg-gray-100 overflow-auto">
+              {previewDocument?.url ? (
+                <div className="w-full h-full flex justify-center items-center p-4">
+                  <div className="bg-white shadow-lg rounded-lg overflow-hidden max-w-full max-h-full">
+                    <div
+                      className="relative transition-transform"
+                      style={{
+                        transform: previewDocument.type?.startsWith("image/")
+                          ? `scale(${zoomLevel})`
+                          : "none",
+                      }}
+                    >
+                      {/* Loading spinner */}
+                      {documentLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-lg">
+                          <div className="flex flex-col items-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            <p className="mt-2 text-sm text-gray-600">
+                              Loading document...
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Check if it's an image */}
+                      {previewDocument.type?.startsWith("image/") ? (
+                        <img
+                          src={previewDocument.url}
+                          alt={previewDocument.filename}
+                          className="max-w-full max-h-[70vh] object-contain"
+                          onLoad={() => setDocumentLoading(false)}
+                          onLoadStart={() => setDocumentLoading(true)}
+                          onError={(e) => {
+                            console.error("Failed to load image:", e);
+                            setDocumentLoading(false);
+                            e.currentTarget.style.display = "none";
+                            e.currentTarget.nextElementSibling?.classList.remove(
+                              "hidden"
+                            );
+                          }}
+                        />
+                      ) : (
+                        /* Use iframe for other document types (PDF, etc.) */
+                        <iframe
+                          src={previewDocument.url}
+                          title={previewDocument.filename}
+                          className="w-full h-[70vh] border-0 sm:min-w-[400px] md:min-w-[600px]"
+                          onLoad={() => setDocumentLoading(false)}
+                          onError={(e) => {
+                            console.error(
+                              "Failed to load document in iframe:",
+                              e
+                            );
+                            setDocumentLoading(false);
+                            e.currentTarget.style.display = "none";
+                            e.currentTarget.nextElementSibling?.classList.remove(
+                              "hidden"
+                            );
+                          }}
+                        />
+                      )}
+
+                      {/* Fallback error message */}
+                      <div className="hidden w-full max-w-[600px] h-[400px] flex items-center justify-center border border-gray-300 rounded mx-auto">
+                        <div className="text-center text-gray-600 p-4">
+                          {getDocumentIcon(previewDocument?.type || "")}
+                          <p className="mt-4 font-medium">
+                            {previewDocument?.filename}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            Unable to preview this document
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Type: {previewDocument?.type || "Unknown"}
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-4"
+                            onClick={() =>
+                              window.open(previewDocument.url, "_blank")
+                            }
+                          >
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            Open in New Tab
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* No URL available */
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-gray-600">
                     {getDocumentIcon(previewDocument?.type || "")}
-                    <p className="mt-2">{previewDocument?.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Document preview would appear here
+                    <p className="mt-4 font-medium">
+                      {previewDocument?.filename || "Document"}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      No preview available
                     </p>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="p-4 border-t flex justify-between">

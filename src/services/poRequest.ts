@@ -180,6 +180,22 @@ export const poRequestApi = {
     const response = await api.post(`/reviewer/purchase-orders/${id}/reject`);
     return response.data.data;
   },
+
+  // Approve a purchase order
+  approveItem: async (id: number): Promise<PurchaseOrder> => {
+    const response = await api.post(
+      `/reviewer/purchase-order-items/${id}/approve`
+    );
+    return response.data.data;
+  },
+
+  // Reject a purchase order
+  rejectItem: async (id: number): Promise<PurchaseOrder> => {
+    const response = await api.post(
+      `/reviewer/purchase-order-items/${id}/reject`
+    );
+    return response.data.data;
+  },
 };
 
 export const discussionsApi = {
@@ -226,6 +242,20 @@ export const catalogItemsApi = {
     uom?: string;
   }): Promise<CatalogItem> => {
     const response = await api.post("/requester/catalog_items", itemData);
+    return response.data.data;
+  },
+
+  // Update a catalog item
+  update: async (
+    id: number,
+    itemData: {
+      item_code: string;
+      description: string;
+      unit_price: number;
+      uom?: string;
+    }
+  ): Promise<CatalogItem> => {
+    const response = await api.put(`/requester/catalog_items/${id}`, itemData);
     return response.data.data;
   },
 

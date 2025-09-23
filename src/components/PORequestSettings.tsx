@@ -40,6 +40,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Upload, Plus, Edit, Trash2, X, Loader2 } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { POPreview } from "@/components/purchase-order/POPreview";
+import { createSamplePO } from "@/utils/sampleData";
+import { PurchaseOrder } from "@/types/purchase-order";
 import { toast } from "sonner";
 import {
   vendorApi,
@@ -88,11 +92,22 @@ const PORequestSettings = () => {
 
   // Edit States
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
-  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
-  const [editingAddress, setEditingAddress] = useState<DeliveryAddress | null>(null);
-  const [editingPaymentTerm, setEditingPaymentTerm] = useState<PaymentTerm | null>(null);
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(
+    null
+  );
+  const [editingAddress, setEditingAddress] = useState<DeliveryAddress | null>(
+    null
+  );
+  const [editingPaymentTerm, setEditingPaymentTerm] =
+    useState<PaymentTerm | null>(null);
   const [editingUnit, setEditingUnit] = useState<UnitOfMeasure | null>(null);
   const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
+
+  // Template States
+  const [selectedTemplate, setSelectedTemplate] = useState<
+    "classic" | "centered" | "modern"
+  >("classic");
+  const [samplePO] = useState<PurchaseOrder>(createSamplePO());
 
   // Form States
   const [vendorForm, setVendorForm] = useState({
@@ -342,7 +357,9 @@ const PORequestSettings = () => {
 
       if (editingVendor) {
         const updated = await vendorApi.update(editingVendor.id, vendorData);
-        setVendors((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
+        setVendors((prev) =>
+          prev.map((v) => (v.id === updated.id ? updated : v))
+        );
         toast.success("Vendor updated successfully");
       } else {
         const createdVendor = await vendorApi.create(vendorData);
@@ -414,8 +431,13 @@ const PORequestSettings = () => {
       };
 
       if (editingDepartment) {
-        const updated = await departmentApi.update(editingDepartment.id, departmentData);
-        setDepartments((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+        const updated = await departmentApi.update(
+          editingDepartment.id,
+          departmentData
+        );
+        setDepartments((prev) =>
+          prev.map((d) => (d.id === updated.id ? updated : d))
+        );
         toast.success("Department updated successfully");
       } else {
         const createdDepartment = await departmentApi.create(departmentData);
@@ -462,7 +484,14 @@ const PORequestSettings = () => {
   };
 
   const resetAddressForm = () => {
-    setAddressForm({ name: "", streetAddress: "", city: "", state: "", zipCode: "", country: "" });
+    setAddressForm({
+      name: "",
+      streetAddress: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      country: "",
+    });
     setEditingAddress(null);
   };
 
@@ -483,8 +512,13 @@ const PORequestSettings = () => {
       };
 
       if (editingAddress) {
-        const updated = await deliveryAddressApi.update(editingAddress.id, addressData);
-        setDeliveryAddresses((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+        const updated = await deliveryAddressApi.update(
+          editingAddress.id,
+          addressData
+        );
+        setDeliveryAddresses((prev) =>
+          prev.map((a) => (a.id === updated.id ? updated : a))
+        );
         toast.success("Address updated successfully");
       } else {
         const createdAddress = await deliveryAddressApi.create(addressData);
@@ -538,8 +572,13 @@ const PORequestSettings = () => {
       const termData = { name: paymentTermForm.name };
 
       if (editingPaymentTerm) {
-        const updated = await paymentTermApi.update(editingPaymentTerm.id, termData);
-        setPaymentTerms((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+        const updated = await paymentTermApi.update(
+          editingPaymentTerm.id,
+          termData
+        );
+        setPaymentTerms((prev) =>
+          prev.map((t) => (t.id === updated.id ? updated : t))
+        );
         toast.success("Payment term updated successfully");
       } else {
         const createdTerm = await paymentTermApi.create(termData);
@@ -594,7 +633,9 @@ const PORequestSettings = () => {
 
       if (editingUnit) {
         const updated = await unitOfMeasureApi.update(editingUnit.id, unitData);
-        setUnitsOfMeasure((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+        setUnitsOfMeasure((prev) =>
+          prev.map((u) => (u.id === updated.id ? updated : u))
+        );
         toast.success("Unit of measure updated successfully");
       } else {
         const createdUnit = await unitOfMeasureApi.create(unitData);
@@ -664,7 +705,9 @@ const PORequestSettings = () => {
 
       if (editingItem) {
         const updated = await catalogItemsApi.update(editingItem.id, itemData);
-        setCatalogItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+        setCatalogItems((prev) =>
+          prev.map((i) => (i.id === updated.id ? updated : i))
+        );
         toast.success("Catalog item updated successfully");
       } else {
         const createdItem = await catalogItemsApi.create(itemData);
@@ -694,6 +737,17 @@ const PORequestSettings = () => {
     } finally {
       setLoading((prev) => ({ ...prev, catalogItems: false }));
     }
+  };
+
+  // Template functionality
+  const handleSaveTemplate = () => {
+    // Here you would typically save to your backend/localStorage
+    // For now, just show success message
+    toast.success(
+      `Template saved: ${
+        selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)
+      }`
+    );
   };
 
   return (
@@ -737,6 +791,7 @@ const PORequestSettings = () => {
               { key: "units", label: "Units" },
               { key: "items", label: "Items" },
               { key: "costs", label: "Costs" },
+              { key: "template", label: "Template" },
             ].map((tab, index) => (
               <button
                 key={tab.key}
@@ -2047,6 +2102,99 @@ const PORequestSettings = () => {
             </div>
           </div>
         )}
+
+        {activeTab === "template" && (
+          <div className="space-y-4 pt-4">
+            {/* Header Actions */}
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-foreground">
+                Purchase Order Template
+              </h3>
+            </div>
+
+            {/* Template Selection */}
+            <Card className="p-6">
+              <div className="space-y-4">
+                <h4 className="text-base font-medium text-foreground">
+                  Choose Template Layout
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Select how your purchase orders will be formatted and
+                  displayed.
+                </p>
+
+                <RadioGroup
+                  value={selectedTemplate}
+                  onValueChange={(value: "classic" | "centered" | "modern") =>
+                    setSelectedTemplate(value)
+                  }
+                  className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6"
+                >
+                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/30 transition-colors">
+                    <RadioGroupItem value="classic" id="classic" />
+                    <div className="flex-1">
+                      <Label htmlFor="classic" className="cursor-pointer">
+                        <div className="font-medium">Classic Layout</div>
+                        <div className="text-sm text-muted-foreground">
+                          Traditional professional format
+                        </div>
+                      </Label>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/30 transition-colors">
+                    <RadioGroupItem value="centered" id="centered" />
+                    <div className="flex-1">
+                      <Label htmlFor="centered" className="cursor-pointer">
+                        <div className="font-medium">Centered Layout</div>
+                        <div className="text-sm text-muted-foreground">
+                          Logo and title centered
+                        </div>
+                      </Label>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/30 transition-colors">
+                    <RadioGroupItem value="modern" id="modern" />
+                    <div className="flex-1">
+                      <Label htmlFor="modern" className="cursor-pointer">
+                        <div className="font-medium">Modern Layout</div>
+                        <div className="text-sm text-muted-foreground">
+                          Contemporary gradient design
+                        </div>
+                      </Label>
+                    </div>
+                  </div>
+                </RadioGroup>
+
+                {/* Template Preview */}
+                <div className="mt-8">
+                  <h4 className="text-base font-medium text-foreground mb-4">
+                    Template Preview
+                  </h4>
+                  <div className="border rounded-lg p-4 bg-gray-50 overflow-hidden">
+                    <div className="scale-75 origin-top-left transform">
+                      <POPreview
+                        purchaseOrder={samplePO}
+                        layout={selectedTemplate}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end pt-4 border-t">
+                  <Button
+                    onClick={handleSaveTemplate}
+                    className="flex items-center gap-2"
+                  >
+                    Save Template Selection
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Add New Vendor Modal */}
@@ -2062,7 +2210,7 @@ const PORequestSettings = () => {
                   Enter comprehensive vendor information for your records.
                 </p>
               </div>
-              <Button
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0"
@@ -2072,7 +2220,7 @@ const PORequestSettings = () => {
                 }}
               >
                 <X className="h-4 w-4" />
-              </Button>
+              </Button> */}
             </div>
           </DialogHeader>
 
@@ -2241,8 +2389,10 @@ const PORequestSettings = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle>{editingDepartment ? "Edit Department" : "Add Department"}</DialogTitle>
-              <Button
+              <DialogTitle>
+                {editingDepartment ? "Edit Department" : "Add Department"}
+              </DialogTitle>
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0"
@@ -2252,7 +2402,7 @@ const PORequestSettings = () => {
                 }}
               >
                 <X className="h-4 w-4" />
-              </Button>
+              </Button> */}
             </div>
           </DialogHeader>
 
@@ -2341,8 +2491,10 @@ const PORequestSettings = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle>{editingAddress ? "Edit Address" : "Add Address"}</DialogTitle>
-              <Button
+              <DialogTitle>
+                {editingAddress ? "Edit Address" : "Add Address"}
+              </DialogTitle>
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0"
@@ -2352,7 +2504,7 @@ const PORequestSettings = () => {
                 }}
               >
                 <X className="h-4 w-4" />
-              </Button>
+              </Button> */}
             </div>
           </DialogHeader>
 
@@ -2473,8 +2625,10 @@ const PORequestSettings = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle>{editingPaymentTerm ? "Edit Payment Term" : "Add Payment Term"}</DialogTitle>
-              <Button
+              <DialogTitle>
+                {editingPaymentTerm ? "Edit Payment Term" : "Add Payment Term"}
+              </DialogTitle>
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0"
@@ -2484,7 +2638,7 @@ const PORequestSettings = () => {
                 }}
               >
                 <X className="h-4 w-4" />
-              </Button>
+              </Button> */}
             </div>
           </DialogHeader>
           <div className="py-4">
@@ -2522,8 +2676,10 @@ const PORequestSettings = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle>{editingUnit ? "Edit Unit of Measure" : "Add Unit of Measure"}</DialogTitle>
-              <Button
+              <DialogTitle>
+                {editingUnit ? "Edit Unit of Measure" : "Add Unit of Measure"}
+              </DialogTitle>
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0"
@@ -2533,7 +2689,7 @@ const PORequestSettings = () => {
                 }}
               >
                 <X className="h-4 w-4" />
-              </Button>
+              </Button> */}
             </div>
           </DialogHeader>
 
@@ -2568,8 +2724,10 @@ const PORequestSettings = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle>{editingItem ? "Edit Line Item" : "Add Line Item"}</DialogTitle>
-              <Button
+              <DialogTitle>
+                {editingItem ? "Edit Line Item" : "Add Line Item"}
+              </DialogTitle>
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0"
@@ -2579,7 +2737,7 @@ const PORequestSettings = () => {
                 }}
               >
                 <X className="h-4 w-4" />
-              </Button>
+              </Button> */}
             </div>
           </DialogHeader>
 
