@@ -51,11 +51,13 @@ import {
   deliveryAddressApi,
   paymentTermApi,
   unitOfMeasureApi,
+  settingsApi,
   type Vendor,
   type Department,
   type DeliveryAddress,
   type PaymentTerm,
   type UnitOfMeasure,
+  type Setting,
 } from "@/services/configurationApi";
 import { catalogItemsApi, type CatalogItem } from "@/services/poRequest";
 
@@ -108,6 +110,11 @@ const PORequestSettings = () => {
     "classic" | "centered" | "modern"
   >("classic");
   const [samplePO] = useState<PurchaseOrder>(createSamplePO());
+
+  // Settings States
+  const [poReferenceFieldEnabled, setPOReferenceFieldEnabled] = useState(false);
+  const [settings, setSettings] = useState<Setting[]>([]);
+  const [settingsLoading, setSettingsLoading] = useState(false);
 
   // Form States
   const [vendorForm, setVendorForm] = useState({
@@ -203,7 +210,7 @@ const PORequestSettings = () => {
         setLoading((prev) => ({ ...prev, vendors: true }));
         const vendorsData = await vendorApi.getAll();
         setVendors(vendorsData);
-        toast.success(`Loaded ${vendorsData.length} vendors`);
+        // toast.success(`Loaded ${vendorsData.length} vendors`);
       } catch (error) {
         console.error("Error fetching vendors:", error);
         toast.error("Failed to load vendors data");
@@ -220,7 +227,7 @@ const PORequestSettings = () => {
         setLoading((prev) => ({ ...prev, departments: true }));
         const departmentsData = await departmentApi.getAll();
         setDepartments(departmentsData);
-        toast.success(`Loaded ${departmentsData.length} departments`);
+        // toast.success(`Loaded ${departmentsData.length} departments`);
       } catch (error) {
         console.error("Error fetching departments:", error);
         toast.error("Failed to load departments data");
@@ -237,7 +244,7 @@ const PORequestSettings = () => {
         setLoading((prev) => ({ ...prev, deliveryAddresses: true }));
         const addressesData = await deliveryAddressApi.getAll();
         setDeliveryAddresses(addressesData);
-        toast.success(`Loaded ${addressesData.length} delivery addresses`);
+        // toast.success(`Loaded ${addressesData.length} delivery addresses`);
       } catch (error) {
         console.error("Error fetching delivery addresses:", error);
         toast.error("Failed to load delivery addresses data");
@@ -254,7 +261,7 @@ const PORequestSettings = () => {
         setLoading((prev) => ({ ...prev, paymentTerms: true }));
         const paymentTermsData = await paymentTermApi.getAll();
         setPaymentTerms(paymentTermsData);
-        toast.success(`Loaded ${paymentTermsData.length} payment terms`);
+        // toast.success(`Loaded ${paymentTermsData.length} payment terms`);
       } catch (error) {
         console.error("Error fetching payment terms:", error);
         toast.error("Failed to load payment terms data");
@@ -271,7 +278,7 @@ const PORequestSettings = () => {
         setLoading((prev) => ({ ...prev, unitsOfMeasure: true }));
         const unitsData = await unitOfMeasureApi.getAll();
         setUnitsOfMeasure(unitsData);
-        toast.success(`Loaded ${unitsData.length} units of measure`);
+        // toast.success(`Loaded ${unitsData.length} units of measure`);
       } catch (error) {
         console.error("Error fetching units of measure:", error);
         toast.error("Failed to load units of measure data");
@@ -288,7 +295,7 @@ const PORequestSettings = () => {
         setLoading((prev) => ({ ...prev, catalogItems: true }));
         const itemsData = await catalogItemsApi.getAll();
         setCatalogItems(itemsData);
-        toast.success(`Loaded ${itemsData.length} catalog items`);
+        // toast.success(`Loaded ${itemsData.length} catalog items`);
       } catch (error) {
         console.error("Error fetching catalog items:", error);
         toast.error("Failed to load catalog items data");
@@ -297,6 +304,70 @@ const PORequestSettings = () => {
       }
     };
     fetchCatalogItems();
+  }, []);
+
+  // Fetch settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        setSettingsLoading(true);
+        console.log("Loading settings from API...");
+
+        // Fetch PO Reference Field setting
+        console.log("Fetching PO Reference Field setting...");
+        const poRefSetting = await settingsApi.get(
+          "po_reference_field_enabled"
+        );
+        if (poRefSetting) {
+          // Handle string values: "true"/"false" or "enabled"/"disabled"
+          const stringValue = String(poRefSetting.value).toLowerCase();
+          const isEnabled = stringValue === "true" || stringValue === "enabled";
+          setPOReferenceFieldEnabled(isEnabled);
+          console.log(
+            `PO Reference Field setting loaded: ${poRefSetting.value} -> ${isEnabled}`
+          );
+        } else {
+          console.log(
+            "PO Reference Field setting not found, using default: false"
+          );
+          setPOReferenceFieldEnabled(false);
+        }
+
+        // Fetch Template setting
+        console.log("Fetching Purchase Order Template setting...");
+        const templateSetting = await settingsApi.get(
+          "purchase_order_template"
+        );
+        if (
+          templateSetting &&
+          ["classic", "centered", "modern"].includes(templateSetting.value)
+        ) {
+          setSelectedTemplate(templateSetting.value);
+          console.log(
+            `Purchase Order Template setting loaded: ${templateSetting.value}`
+          );
+        } else {
+          console.log(
+            "Purchase Order Template setting not found or invalid, using default: classic"
+          );
+          setSelectedTemplate("classic");
+        }
+
+        // Fetch all settings for potential future use
+        console.log("Fetching all settings...");
+        const allSettings = await settingsApi.getAll();
+        setSettings(allSettings);
+        // toast.success("Settings loaded successfully");
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+        toast.error(
+          "Failed to load settings. Please check the console for details."
+        );
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+    fetchSettings();
   }, []);
 
   // Vendor CRUD operations
@@ -417,8 +488,13 @@ const PORequestSettings = () => {
   };
 
   const handleSaveDepartment = async () => {
-    if (!departmentForm.name.trim()) {
-      toast.error("Please enter department name");
+    if (
+      !departmentForm.name.trim() ||
+      !departmentForm.manager.trim() ||
+      !departmentForm.email.trim() ||
+      !departmentForm.budgetCode.trim()
+    ) {
+      toast.error("Please fill all required fields");
       return;
     }
     try {
@@ -496,8 +572,15 @@ const PORequestSettings = () => {
   };
 
   const handleSaveAddress = async () => {
-    if (!addressForm.name.trim()) {
-      toast.error("Please enter address name");
+    if (
+      !addressForm.name.trim() ||
+      !addressForm.streetAddress.trim() ||
+      !addressForm.city.trim() ||
+      !addressForm.state.trim() ||
+      !addressForm.zipCode.trim() ||
+      !addressForm.country.trim()
+    ) {
+      toast.error("Please fill all required fields");
       return;
     }
     try {
@@ -739,15 +822,45 @@ const PORequestSettings = () => {
     }
   };
 
+  // Settings update handlers
+  const handlePOReferenceFieldToggle = async (enabled: boolean) => {
+    try {
+      setSettingsLoading(true);
+      // Send string value instead of boolean
+      const stringValue = enabled ? "enabled" : "disabled";
+      await settingsApi.update("po_reference_field_enabled", stringValue);
+      setPOReferenceFieldEnabled(enabled);
+      toast.success(`PO Reference Field ${enabled ? "enabled" : "disabled"}`);
+    } catch (error) {
+      console.error("Error updating PO Reference Field setting:", error);
+      toast.error("Failed to update PO Reference Field setting");
+      // Revert the toggle
+      setPOReferenceFieldEnabled(!enabled);
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
   // Template functionality
-  const handleSaveTemplate = () => {
-    // Here you would typically save to your backend/localStorage
-    // For now, just show success message
-    toast.success(
-      `Template saved: ${
-        selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)
-      }`
-    );
+  const handleSaveTemplate = async () => {
+    try {
+      setSettingsLoading(true);
+      await settingsApi.update("purchase_order_template", selectedTemplate);
+      toast.success(
+        `Template saved: ${
+          selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)
+        }`
+      );
+    } catch (error) {
+      console.error("Error saving template setting:", error);
+      toast.error("Failed to save template setting");
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
+  const handleTemplateChange = (value: "classic" | "centered" | "modern") => {
+    setSelectedTemplate(value);
   };
 
   return (
@@ -830,11 +943,24 @@ const PORequestSettings = () => {
                     PO Reference Field
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Field is read-only
+                    {poReferenceFieldEnabled
+                      ? "Field is editable by users"
+                      : "Field is read-only"}
                   </p>
+                  {settingsLoading && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Updating setting...
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Switch id="po-reference" defaultChecked={false} />
+                  <Switch
+                    id="po-reference"
+                    checked={poReferenceFieldEnabled}
+                    onCheckedChange={handlePOReferenceFieldToggle}
+                    disabled={settingsLoading}
+                  />
                   <Label htmlFor="po-reference" className="sr-only">
                     Toggle PO Reference Field
                   </Label>
@@ -2110,6 +2236,12 @@ const PORequestSettings = () => {
               <h3 className="text-lg font-semibold text-foreground">
                 Purchase Order Template
               </h3>
+              {settingsLoading && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading template settings...
+                </div>
+              )}
             </div>
 
             {/* Template Selection */}
@@ -2121,13 +2253,21 @@ const PORequestSettings = () => {
                 <p className="text-sm text-muted-foreground">
                   Select how your purchase orders will be formatted and
                   displayed.
+                  {!settingsLoading && (
+                    <span className="font-medium text-foreground ml-1">
+                      Current:{" "}
+                      {selectedTemplate.charAt(0).toUpperCase() +
+                        selectedTemplate.slice(1)}
+                    </span>
+                  )}
                 </p>
 
                 <RadioGroup
                   value={selectedTemplate}
                   onValueChange={(value: "classic" | "centered" | "modern") =>
-                    setSelectedTemplate(value)
+                    handleTemplateChange(value)
                   }
+                  disabled={settingsLoading}
                   className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6"
                 >
                   <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/30 transition-colors">
@@ -2186,8 +2326,12 @@ const PORequestSettings = () => {
                 <div className="flex justify-end pt-4 border-t">
                   <Button
                     onClick={handleSaveTemplate}
+                    disabled={settingsLoading}
                     className="flex items-center gap-2"
                   >
+                    {settingsLoading && (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    )}
                     Save Template Selection
                   </Button>
                 </div>
@@ -2425,7 +2569,7 @@ const PORequestSettings = () => {
             {/* Manager */}
             <div className="space-y-2">
               <Label htmlFor="manager" className="text-sm font-medium">
-                Manager
+                Manager <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="manager"
@@ -2440,7 +2584,7 @@ const PORequestSettings = () => {
             {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="departmentEmail" className="text-sm font-medium">
-                Email
+                Email <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="departmentEmail"
@@ -2456,7 +2600,7 @@ const PORequestSettings = () => {
             {/* Budget Code */}
             <div className="space-y-2">
               <Label htmlFor="budgetCode" className="text-sm font-medium">
-                Budget Code
+                Budget Code <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="budgetCode"
@@ -2478,9 +2622,14 @@ const PORequestSettings = () => {
             </Button>
             <Button
               onClick={handleSaveDepartment}
-              disabled={!departmentForm.name.trim()}
+              disabled={
+                !departmentForm.name.trim() ||
+                !departmentForm.manager.trim() ||
+                !departmentForm.email.trim() ||
+                !departmentForm.budgetCode.trim()
+              }
             >
-              {editingPaymentTerm ? "Update" : "Save"}
+              {editingDepartment ? "Update" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2527,7 +2676,7 @@ const PORequestSettings = () => {
             {/* Street Address */}
             <div className="space-y-2">
               <Label htmlFor="streetAddress" className="text-sm font-medium">
-                Street Address
+                Street Address <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="streetAddress"
@@ -2542,7 +2691,7 @@ const PORequestSettings = () => {
             {/* City */}
             <div className="space-y-2">
               <Label htmlFor="city" className="text-sm font-medium">
-                City
+                City <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="city"
@@ -2557,7 +2706,7 @@ const PORequestSettings = () => {
             {/* State */}
             <div className="space-y-2">
               <Label htmlFor="state" className="text-sm font-medium">
-                State
+                State <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="state"
@@ -2572,7 +2721,7 @@ const PORequestSettings = () => {
             {/* ZIP Code */}
             <div className="space-y-2">
               <Label htmlFor="zipCode" className="text-sm font-medium">
-                ZIP Code
+                ZIP Code <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="zipCode"
@@ -2587,7 +2736,7 @@ const PORequestSettings = () => {
             {/* Country */}
             <div className="space-y-2">
               <Label htmlFor="country" className="text-sm font-medium">
-                Country
+                Country <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="country"
@@ -2609,7 +2758,14 @@ const PORequestSettings = () => {
             </Button>
             <Button
               onClick={handleSaveAddress}
-              disabled={!addressForm.name.trim()}
+              disabled={
+                !addressForm.name.trim() ||
+                !addressForm.streetAddress.trim() ||
+                !addressForm.city.trim() ||
+                !addressForm.state.trim() ||
+                !addressForm.zipCode.trim() ||
+                !addressForm.country.trim()
+              }
             >
               Save
             </Button>

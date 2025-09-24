@@ -54,6 +54,7 @@ import {
   paymentTermApi,
   unitOfMeasureApi,
   vendorApi,
+  settingsApi,
 } from "@/services/configurationApi";
 import {
   poRequestApi,
@@ -79,6 +80,15 @@ const fallbackUnitsOfMeasure = [
   { id: 13, name: "Case" },
   { id: 14, name: "Pallet" },
 ];
+
+// Helper function to format file size
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
 
 // Local interfaces for UI state management
 interface ConfigItem {
@@ -139,17 +149,22 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(1);
   const [uom, setUom] = useState<number>(0);
-  const [dynamicUnitsOfMeasure, setDynamicUnitsOfMeasure] = useState<UnitOfMeasure[]>([]);
+  const [dynamicUnitsOfMeasure, setDynamicUnitsOfMeasure] = useState<
+    UnitOfMeasure[]
+  >([]);
   const [customItem, setCustomItem] = useState(false);
   const [customItemCode, setCustomItemCode] = useState("");
   const [customDescription, setCustomDescription] = useState("");
   const [customUnitPrice, setCustomUnitPrice] = useState<number>(0);
-  
+
   // Loading state for UOM
   const [loadingUOM, setLoadingUOM] = useState(false);
 
   // Determine which UOM list to use (API data or fallback)
-  const unitsOfMeasure = dynamicUnitsOfMeasure.length > 0 ? dynamicUnitsOfMeasure : fallbackUnitsOfMeasure;
+  const unitsOfMeasure =
+    dynamicUnitsOfMeasure.length > 0
+      ? dynamicUnitsOfMeasure
+      : fallbackUnitsOfMeasure;
 
   // Fetch units of measure data on component mount
   useEffect(() => {
@@ -171,7 +186,7 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
           setUom(transformedUnits[0].id);
         }
 
-        toast.success(`Loaded ${transformedUnits.length} units of measure`);
+        // toast.success(`Loaded ${transformedUnits.length} units of measure`);
       } catch (error) {
         console.error("Error fetching units of measure:", error);
         toast.error("Failed to load units of measure data");
@@ -502,6 +517,13 @@ const CreatePO: React.FC = () => {
   const [minimized, setMinimized] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
 
+  // PO Reference Field setting state
+  const [poReferenceFieldEnabled, setPOReferenceFieldEnabled] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+
+  // Drag and drop state
+  const [isDragOver, setIsDragOver] = useState(false);
+
   // Loading states
   const [loading, setLoading] = useState<LoadingStates>({
     vendors: false,
@@ -532,6 +554,44 @@ const CreatePO: React.FC = () => {
     setReference(`${prefix}${randomNum}`);
   }, []);
 
+  // Fetch PO Reference Field setting from API
+  useEffect(() => {
+    const fetchPOReferenceSettings = async () => {
+      try {
+        setSettingsLoading(true);
+        console.log("Fetching PO Reference Field setting...");
+
+        const poRefSetting = await settingsApi.get(
+          "po_reference_field_enabled"
+        );
+        if (poRefSetting) {
+          // Handle string values: "true"/"false" or "enabled"/"disabled"
+          const stringValue = String(poRefSetting.value).toLowerCase();
+          const isEnabled = stringValue === "true" || stringValue === "enabled";
+          setPOReferenceFieldEnabled(isEnabled);
+          console.log(
+            `PO Reference Field setting loaded: ${poRefSetting.value} -> ${isEnabled}`
+          );
+        } else {
+          console.log(
+            "PO Reference Field setting not found, using default: false (read-only)"
+          );
+          setPOReferenceFieldEnabled(false);
+        }
+      } catch (error) {
+        console.error("Error fetching PO Reference Field setting:", error);
+        console.log(
+          "Failed to load PO Reference Field setting, using default: false (read-only)"
+        );
+        setPOReferenceFieldEnabled(false);
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+
+    fetchPOReferenceSettings();
+  }, []);
+
   // Fetch vendors data on component mount
   useEffect(() => {
     const fetchVendors = async () => {
@@ -552,7 +612,7 @@ const CreatePO: React.FC = () => {
         );
 
         setDetailedVendors(transformedVendors);
-        toast.success(`Loaded ${transformedVendors.length} vendors`);
+        // toast.success(`Loaded ${transformedVendors.length} vendors`);
       } catch (error) {
         console.error("Error fetching vendors:", error);
         toast.error("Failed to load vendors data");
@@ -583,7 +643,7 @@ const CreatePO: React.FC = () => {
         );
 
         setDetailedDepartments(transformedDepartments);
-        toast.success(`Loaded ${transformedDepartments.length} departments`);
+        // toast.success(`Loaded ${transformedDepartments.length} departments`);
       } catch (error) {
         console.error("Error fetching departments:", error);
         toast.error("Failed to load departments data");
@@ -616,9 +676,9 @@ const CreatePO: React.FC = () => {
         );
 
         setDetailedAddresses(transformedAddresses);
-        toast.success(
-          `Loaded ${transformedAddresses.length} delivery addresses`
-        );
+        // toast.success(
+        //   `Loaded ${transformedAddresses.length} delivery addresses`
+        // );
       } catch (error) {
         console.error("Error fetching delivery addresses:", error);
         toast.error("Failed to load delivery addresses data");
@@ -646,7 +706,7 @@ const CreatePO: React.FC = () => {
         );
 
         setStaticPaymentTerms(transformedPaymentTerms);
-        toast.success(`Loaded ${transformedPaymentTerms.length} payment terms`);
+        // toast.success(`Loaded ${transformedPaymentTerms.length} payment terms`);
       } catch (error) {
         console.error("Error fetching payment terms:", error);
         toast.error("Failed to load payment terms data");
@@ -726,12 +786,130 @@ const CreatePO: React.FC = () => {
   const handleFilesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = event.target.files;
     if (!selectedFiles) return;
-    setFiles((prev) => [...prev, ...Array.from(selectedFiles)]);
+
+    const fileArray = Array.from(selectedFiles);
+    const validFiles = fileArray.filter((file) => {
+      const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "text/plain",
+        "text/csv",
+      ];
+      const maxSize = 10 * 1024 * 1024; // 10MB limit
+
+      if (!allowedTypes.includes(file.type) && file.type !== "") {
+        toast.error(`File "${file.name}" has an unsupported file type`);
+        return false;
+      }
+
+      if (file.size > maxSize) {
+        toast.error(`File "${file.name}" is too large (max 10MB)`);
+        return false;
+      }
+
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      setFiles((prev) => [...prev, ...validFiles]);
+      toast.success(`${validFiles.length} file(s) added successfully`);
+    }
+
+    if (validFiles.length < fileArray.length) {
+      toast.warning(
+        `${
+          fileArray.length - validFiles.length
+        } file(s) were rejected due to validation`
+      );
+    }
+
+    // Clear the input value to allow selecting the same file again
+    event.target.value = "";
   };
 
   // Remove a file from list
   const handleRemoveFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Drag and drop event handlers
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set drag over to false if we're leaving the drop zone entirely
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length > 0) {
+      // Optional: Add file type validation
+      const validFiles = droppedFiles.filter((file) => {
+        const allowedTypes = [
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "image/webp",
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "application/vnd.ms-excel",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "text/plain",
+          "text/csv",
+        ];
+        const maxSize = 10 * 1024 * 1024; // 10MB limit
+
+        if (!allowedTypes.includes(file.type) && file.type !== "") {
+          toast.error(`File "${file.name}" has an unsupported file type`);
+          return false;
+        }
+
+        if (file.size > maxSize) {
+          toast.error(`File "${file.name}" is too large (max 10MB)`);
+          return false;
+        }
+
+        return true;
+      });
+
+      if (validFiles.length > 0) {
+        setFiles((prev) => [...prev, ...validFiles]);
+        toast.success(`${validFiles.length} file(s) added successfully`);
+      }
+
+      if (validFiles.length < droppedFiles.length) {
+        toast.warning(
+          `${
+            droppedFiles.length - validFiles.length
+          } file(s) were rejected due to validation`
+        );
+      }
+    }
   };
 
   const handleSubmit = async () => {
@@ -817,7 +995,7 @@ const CreatePO: React.FC = () => {
 
   return (
     <div className="pb-10">
-      <div className="sticky top-0 z-10 bg-background py-4 border-b mb-6">
+      <div className="sticky top-0 z-50 bg-background py-4 border-b mb-6">
         <div className="container mx-auto px-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold">Create PO Request</h1>
@@ -869,14 +1047,34 @@ const CreatePO: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="reference" className="text-sm">
+              <Label htmlFor="reference" className="text-sm flex items-center">
                 PO Reference
               </Label>
               <Input
                 id="reference"
                 value={reference}
-                readOnly
-                className="h-9 bg-muted/30"
+                readOnly={!poReferenceFieldEnabled || settingsLoading}
+                placeholder={
+                  poReferenceFieldEnabled
+                    ? "Enter PO reference"
+                    : "Auto-generated reference"
+                }
+                onChange={
+                  poReferenceFieldEnabled
+                    ? (e) => setReference(e.target.value)
+                    : undefined
+                }
+                className={cn(
+                  "h-9",
+                  (!poReferenceFieldEnabled || settingsLoading) &&
+                    "bg-muted/30 cursor-not-allowed",
+                  poReferenceFieldEnabled && !settingsLoading && "bg-white"
+                )}
+                title={
+                  poReferenceFieldEnabled
+                    ? "You can edit this PO reference"
+                    : "PO reference is auto-generated and read-only"
+                }
               />
             </div>
 
@@ -1246,15 +1444,41 @@ const CreatePO: React.FC = () => {
           <Card>
             <CardContent className="p-6">
               <div
-                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/20 transition-colors"
+                className={cn(
+                  "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
+                  isDragOver
+                    ? "border-blue-500 bg-blue-50 border-solid"
+                    : "border-gray-300 hover:bg-muted/20 hover:border-gray-400"
+                )}
                 onClick={() =>
                   document.getElementById("po-file-input")?.click()
                 }
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
               >
-                <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                <p className="font-medium">Drag & drop files here</p>
-                <p className="text-sm text-muted-foreground">
-                  or click to browse
+                <Upload
+                  className={cn(
+                    "mx-auto h-8 w-8 mb-2 transition-colors",
+                    isDragOver ? "text-blue-500" : "text-muted-foreground"
+                  )}
+                />
+                <p
+                  className={cn(
+                    "font-medium transition-colors",
+                    isDragOver ? "text-blue-700" : "text-foreground"
+                  )}
+                >
+                  {isDragOver ? "Drop files here" : "Drag & drop files here"}
+                </p>
+                <p
+                  className={cn(
+                    "text-sm transition-colors",
+                    isDragOver ? "text-blue-600" : "text-muted-foreground"
+                  )}
+                >
+                  {isDragOver ? "Release to upload" : "or click to browse"}
                 </p>
                 <Button
                   variant="secondary"
@@ -1277,24 +1501,38 @@ const CreatePO: React.FC = () => {
               </div>
               {files.length > 0 && (
                 <div className="mt-4">
-                  <h4 className="font-medium mb-2">Selected Files:</h4>
-                  <ul className="list-disc pl-5">
+                  <h4 className="font-medium mb-3">
+                    Selected Files ({files.length}):
+                  </h4>
+                  <div className="space-y-2">
                     {files.map((file, idx) => (
-                      <li
+                      <div
                         key={idx}
-                        className="flex items-center justify-between mb-1"
+                        className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border"
                       >
-                        <span>{file.name}</span>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className="font-medium text-sm truncate"
+                            title={file.name}
+                          >
+                            {file.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatFileSize(file.size)} •{" "}
+                            {file.type || "Unknown type"}
+                          </p>
+                        </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveFile(idx)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
                         >
                           Remove
                         </Button>
-                      </li>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
             </CardContent>

@@ -227,3 +227,57 @@ export const unitOfMeasureApi = {
     await api.delete(`/configuration/units-of-measure/${id}`);
   },
 };
+
+// Settings API types
+export interface Setting {
+  id?: number;
+  name: string;
+  value: any;
+  description?: string;
+  type?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SettingResponse {
+  message: string;
+  data?: Setting;
+}
+
+// Settings API calls
+export const settingsApi = {
+  get: async (name: string): Promise<Setting | null> => {
+    try {
+      const response = await api.get(`/configuration/settings/name/${name}`);
+      return response.data.data;
+    } catch (error: any) {
+      // If setting doesn't exist, return null
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
+  getAll: async (): Promise<Setting[]> => {
+    const response = await api.get("/configuration/settings");
+    return response.data.data || [];
+  },
+
+  update: async (name: string, value: any): Promise<SettingResponse> => {
+    const response = await api.post("/configuration/settings", {
+      name,
+      value,
+    });
+    return response.data;
+  },
+
+  updateBatch: async (
+    settings: Array<{ name: string; value: any }>
+  ): Promise<SettingResponse> => {
+    const response = await api.post("/configuration/settings/batch", {
+      settings,
+    });
+    return response.data;
+  },
+};

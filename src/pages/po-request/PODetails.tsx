@@ -26,6 +26,7 @@ import {
   PurchaseOrderSummary,
   discussionsApi,
 } from "@/services/poRequest";
+import { settingsApi } from "@/services/configurationApi";
 // import { formatCurrency } from "@/lib/formatters";
 
 // Local formatCurrency function
@@ -68,10 +69,11 @@ import { toast } from "sonner";
 import html2pdf from "html2pdf.js";
 import {
   pdfHtmlClassicPO,
-  PurchaseOrderData,
-  POLineItem,
+  pdfHtmlCenteredPO,
   pdfHtmlModernPO,
   pdfHtmlSimplePO,
+  PurchaseOrderData,
+  POLineItem,
 } from "@/utils/storageData";
 import {
   ArrowLeft,
@@ -156,6 +158,11 @@ const PODetails: React.FC = () => {
     new Set()
   );
   const [documentLoading, setDocumentLoading] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<
+    "classic" | "centered" | "modern"
+  >("classic");
+  const [templateLoading, setTemplateLoading] = useState(false);
+  const [pdfDownloading, setPdfDownloading] = useState(false);
 
   // Initialize notesValue when po is loaded
   useEffect(() => {
@@ -293,6 +300,40 @@ const PODetails: React.FC = () => {
 
     fetchPOData();
   }, [id, navigate]);
+
+  // Fetch template setting from API
+  useEffect(() => {
+    const fetchTemplateSettings = async () => {
+      try {
+        setTemplateLoading(true);
+        console.log("Fetching template settings...");
+
+        const templateSetting = await settingsApi.get(
+          "purchase_order_template"
+        );
+        if (
+          templateSetting &&
+          ["classic", "centered", "modern"].includes(templateSetting.value)
+        ) {
+          setSelectedTemplate(templateSetting.value);
+          console.log(`Template setting loaded: ${templateSetting.value}`);
+        } else {
+          console.log(
+            "Template setting not found or invalid, using default: classic"
+          );
+          setSelectedTemplate("classic");
+        }
+      } catch (error) {
+        console.error("Error fetching template settings:", error);
+        console.log("Failed to load template setting, using default: classic");
+        setSelectedTemplate("classic");
+      } finally {
+        setTemplateLoading(false);
+      }
+    };
+
+    fetchTemplateSettings();
+  }, []);
 
   const handleBack = () => {
     navigate("/po-requests");
@@ -676,6 +717,9 @@ const PODetails: React.FC = () => {
     if (!po) return;
 
     try {
+      setPdfDownloading(true);
+      console.log(`📄 Generating PDF using template: ${selectedTemplate}`);
+
       // Convert PO data to the required format for PDF template
       const poData: PurchaseOrderData = {
         poNumber: po.reference,
@@ -727,10 +771,34 @@ const PODetails: React.FC = () => {
         department: po.department,
       };
 
+      // Select template function based on settings API value
+      let templateHtml = "";
+      switch (selectedTemplate) {
+        case "classic":
+          templateHtml = pdfHtmlClassicPO(poData);
+          console.log(`✅ Using Classic template for PDF generation`);
+          break;
+        case "centered":
+          templateHtml = pdfHtmlCenteredPO(poData);
+          console.log(`✅ Using Centered template for PDF generation`);
+          break;
+        case "modern":
+          templateHtml = pdfHtmlModernPO(poData);
+          console.log(`✅ Using Modern template for PDF generation`);
+          break;
+        default:
+          templateHtml = pdfHtmlClassicPO(poData);
+          console.log(
+            `⚠️  Template '${selectedTemplate}' not recognized, using Simple template as fallback`
+          );
+      }
+
       const element = document.createElement("div");
-      element.innerHTML = pdfHtmlSimplePO(poData);
-      // Generate HTML using the classic template
-      console.log(element);
+      element.innerHTML = templateHtml;
+      console.log(
+        `📋 Generated HTML for ${selectedTemplate} template:`,
+        element
+      );
 
       // Convert HTML to PDF using html2pdf
       const opt = {
@@ -749,10 +817,14 @@ const PODetails: React.FC = () => {
       // Generate and download PDF
       await html2pdf().from(element).set(opt).save();
 
-      toast.success(`Purchase order PDF downloaded successfully!`);
+      toast.success(
+        `Purchase order PDF downloaded successfully using ${selectedTemplate} template!`
+      );
     } catch (error) {
       console.error("❌ Failed to download PO PDF:", error);
       toast.error("Failed to download purchase order PDF. Please try again.");
+    } finally {
+      setPdfDownloading(false);
     }
   };
 
@@ -987,39 +1059,6 @@ const PODetails: React.FC = () => {
                           "Approve"
                         )}
                       </Button>
-                    </>
-                  )}
-
-                  {po.status === "submitted" && (
-                    <>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {}}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>More options</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => {}}
-                            >
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Print</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
                     </>
                   )}
 
@@ -1506,7 +1545,23 @@ const PODetails: React.FC = () => {
               {/* Documents Tab - Table Format */}
               <TabsContent value="documents" className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h2 className="text-lg font-medium">Documents</h2>
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-medium">Documents</h2>
+                    {!templateLoading && (
+                      <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full text-xs font-medium border border-blue-200">
+                        <FileText className="h-3 w-3" />
+                        {selectedTemplate.charAt(0).toUpperCase() +
+                          selectedTemplate.slice(1)}{" "}
+                        Template
+                      </div>
+                    )}
+                    {templateLoading && (
+                      <div className="flex items-center gap-1.5 bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full text-xs">
+                        <div className="h-2 w-2 border border-gray-400 border-t-transparent rounded-full animate-spin" />
+                        Loading template...
+                      </div>
+                    )}
+                  </div>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -1668,6 +1723,10 @@ const PODetails: React.FC = () => {
                                     <Button
                                       variant="ghost"
                                       size="sm"
+                                      disabled={
+                                        doc.isPurchaseOrder &&
+                                        (pdfDownloading || templateLoading)
+                                      }
                                       onClick={() => {
                                         // Check if this is the purchase order document
                                         if (doc.isPurchaseOrder) {
@@ -1692,10 +1751,20 @@ const PODetails: React.FC = () => {
                                         }
                                       }}
                                     >
-                                      <Download className="h-4 w-4" />
+                                      {doc.isPurchaseOrder && pdfDownloading ? (
+                                        <div className="h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                                      ) : (
+                                        <Download className="h-4 w-4" />
+                                      )}
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>Download</TooltipContent>
+                                  <TooltipContent>
+                                    {doc.isPurchaseOrder
+                                      ? pdfDownloading
+                                        ? `Generating ${selectedTemplate} template...`
+                                        : `Download PDF (${selectedTemplate} template)`
+                                      : "Download"}
+                                  </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
 

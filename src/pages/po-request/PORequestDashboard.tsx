@@ -419,7 +419,7 @@ const PORequestDashboard = () => {
                 </div>
               </div>
             ) : (
-              <POTable purchaseOrders={filteredPOs} />
+              <POTable purchaseOrders={filteredPOs} filterKey={`${currentTab}-${searchQuery}`} />
             )}
           </div>
         </div>

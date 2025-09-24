@@ -50,11 +50,13 @@ import {
 interface POTableProps {
   purchaseOrders: PurchaseOrder[];
   itemsPerPage?: number;
+  filterKey?: string;
 }
 
 const POTable: React.FC<POTableProps> = ({
   purchaseOrders,
   itemsPerPage = 15,
+  filterKey,
 }) => {
   const navigate = useNavigate();
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
@@ -67,6 +69,11 @@ const POTable: React.FC<POTableProps> = ({
   } | null>(null);
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  // Reset pagination when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterKey]);
 
   // Sort POs with custom logic
   const sortedPOs = [...purchaseOrders].sort((a, b) => {
