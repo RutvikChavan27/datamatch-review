@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ChevronDown,
+  ChevronRight,
   LogOut,
   UserCircle,
   Settings,
@@ -49,10 +51,12 @@ interface NavCategory {
 const Sidebar: React.FC<SidebarProps> = ({ enabledModules }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [expandedSection, setExpandedSection] = useState<
     "PRODUCTIVITY ENGINE" | "DOCUMENT MATCHING" | null
   >("DOCUMENT MATCHING");
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
+  const [isProductivityEngineExpanded, setIsProductivityEngineExpanded] = useState(false);
 
   const isActive = (path?: string) => {
     if (!path) return false;
@@ -108,6 +112,10 @@ const Sidebar: React.FC<SidebarProps> = ({ enabledModules }) => {
           path: "/workflows",
           always: true,
           icon: Workflow,
+          subItems: [
+            { name: "Simple Workflow", path: "/workflows/create?type=simple", always: true },
+            { name: "Advanced Workflow", path: "/workflows/create?type=advanced", always: true },
+          ],
         },
         {
           name: "PO Requests",
@@ -127,9 +135,65 @@ const Sidebar: React.FC<SidebarProps> = ({ enabledModules }) => {
     },
   ];
 
-  // Render logic for items and subItems (no icons)
+  // Render logic for items and subItems
   const renderNavItem = (item: NavItem) => {
-    if (item.subItems && item.subItems.length > 0) {
+    // Special handling for Productivity Engine with accordion
+    if (item.name === "Productivity Engine" && item.subItems && item.subItems.length > 0) {
+      const isExpanded = isProductivityEngineExpanded;
+      
+      const handleProductivityEngineClick = () => {
+        setIsProductivityEngineExpanded(!isExpanded);
+        if (item.path) {
+          navigate(item.path);
+        }
+      };
+      
+      return (
+        <li key={item.name}>
+          <div>
+            <button
+              onClick={handleProductivityEngineClick}
+              className={`w-full flex items-center px-3 py-2 rounded-r-md text-sm font-medium transition-colors relative ${
+                isActive(item.path)
+                  ? "bg-[hsl(var(--sidebar-active))] text-foreground border-l-2 border-primary"
+                  : "text-gray-700 hover:bg-gray-50 rounded-md"
+              }`}
+            >
+              {item.icon && <item.icon className="h-4 w-4 mr-3" />}
+              {item.name}
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4 ml-auto" />
+              ) : (
+                <ChevronRight className="h-4 w-4 ml-auto" />
+              )}
+            </button>
+            {isExpanded && (
+              <ul className="ml-9 mt-1 space-y-1">
+                {item.subItems
+                  .filter(
+                    (sub) =>
+                      sub.always || sub.condition === undefined || sub.condition
+                  )
+                  .map((sub) => (
+                    <li key={sub.name}>
+                      <Link
+                        to={sub.path || "#"}
+                        className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          isActive(sub.path)
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        {sub.name}
+                      </Link>
+                    </li>
+                  ))}
+              </ul>
+            )}
+          </div>
+        </li>
+      );
+    } else if (item.subItems && item.subItems.length > 0) {
       return (
         <div key={item.name} className="mb-1">
           <div className="flex items-center px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -188,13 +252,14 @@ const Sidebar: React.FC<SidebarProps> = ({ enabledModules }) => {
     setExpandedSection((prev) => (prev === section ? null : section));
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setShowLoadingScreen(true);
-    // Simulate logout process delay
-    setTimeout(() => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
       setShowLoadingScreen(false);
-      navigate("/login");
-    }, 2000);
+    }
   };
 
   return (

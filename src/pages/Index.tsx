@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import Sidebar from "../components/Sidebar";
+import SuperAdminSidebar from "../components/SuperAdminSidebar";
 import MatchingQueue from "../components/MatchingQueue";
 import ManualReviewDetail from "../components/ManualReviewDetail";
 import InvoicesList from "../components/InvoicesList";
@@ -43,6 +44,16 @@ import PORequestSettings from "../components/PORequestSettings";
 import Profile from "./Profile";
 import WorkflowCreation from "./WorkflowCreation";
 
+// Super Admin imports
+import LandingPage from "./LandingPage";
+import SuperAdminLogin from "./SuperAdminLogin";
+import SuperAdminOTPAuth from "./SuperAdminOTPAuth";
+import SuperAdminDashboard from "../components/SuperAdminDashboard";
+import Tenants from "../components/Tenants";
+import AddTenantWizard from "../components/AddTenantWizard";
+import SuperAdminReportsAnalytics from "../components/SuperAdminReportsAnalytics";
+import Audits from "../components/Audits";
+
 // Helper hook to determine if we need full width (no padding)
 function useFullWidth() {
   const location = useLocation();
@@ -51,15 +62,25 @@ function useFullWidth() {
   return path.includes("/preview") || path.includes("/workflows/create");
 }
 
+// Helper hook to determine if we're on super admin routes
+function useIsSuperAdmin() {
+  const location = useLocation();
+  return location.pathname.startsWith("/super-admin/");
+}
+
 // Helper hook to determine if we're on an auth page
 function useIsAuthPage() {
   const location = useLocation();
   const path = location.pathname;
   return (
+    path === "/" ||
     path === "/login" ||
     path === "/otp-auth" ||
     path === "/forgot-password" ||
-    path === "/reset-password"
+    path === "/reset-password" ||
+    path === "/super-admin/login" ||
+    path === "/super-admin/otp-auth" ||
+    path === "/super-admin/forgot-password"
   );
 }
 
@@ -67,6 +88,7 @@ const Index = () => {
   const { enabledModules, loading } = useClientModules();
   const fullWidth = useFullWidth();
   const isAuthPage = useIsAuthPage();
+  const isSuperAdmin = useIsSuperAdmin();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleMenuToggle = () => {
@@ -86,10 +108,14 @@ const Index = () => {
     return (
       <div className="min-h-screen">
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/otp-auth" element={<OTPAuth />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+          <Route path="/super-admin/otp-auth" element={<SuperAdminOTPAuth />} />
+          <Route path="/super-admin/forgot-password" element={<ForgotPassword />} />
         </Routes>
       </div>
     );
@@ -103,7 +129,11 @@ const Index = () => {
         {/* Sidebar */}
         {sidebarOpen && (
           <div className="w-60 bg-white border-r border-gray-200 z-40 flex-shrink-0 transition-all duration-300 h-full">
-            <Sidebar enabledModules={enabledModules} />
+            {isSuperAdmin ? (
+              <SuperAdminSidebar />
+            ) : (
+              <Sidebar enabledModules={enabledModules} />
+            )}
           </div>
         )}
 
@@ -115,8 +145,8 @@ const Index = () => {
         >
           <div className="flex-1 ">
             <Routes>
-              {/* Main App Routes */}
-              <Route path="/" element={<Workspace />} />
+              {/* Tenant App Routes */}
+              <Route path="/workspace" element={<Workspace />} />
               <Route path="/matching" element={<MatchingQueue />} />
               <Route
                 path="/matching/sets/:setId"
@@ -163,7 +193,6 @@ const Index = () => {
               <Route path="/workflows" element={<WorkflowsList />} />
               <Route path="/workflows/create" element={<WorkflowCreation />} />
               <Route path="/reports" element={<ReportsAnalytics />} />
-              <Route path="/workspace" element={<Workspace />} />
               <Route
                 path="/workspace/task/:taskId"
                 element={<WorkspaceTaskDocumentView />}
@@ -197,6 +226,14 @@ const Index = () => {
                 element={<PORequestSettings />}
               />
               <Route path="/profile" element={<Profile />} />
+              
+              {/* Super Admin Routes */}
+              <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
+              <Route path="/super-admin/tenants" element={<Tenants />} />
+              <Route path="/super-admin/tenants/add" element={<AddTenantWizard />} />
+              <Route path="/super-admin/reports" element={<SuperAdminReportsAnalytics />} />
+              <Route path="/super-admin/audits" element={<Audits />} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>

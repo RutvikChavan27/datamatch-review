@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { WorkflowTypeSelection } from '../components/WorkflowTypeSelection';
 import { SimpleWorkflowWizard } from '../components/SimpleWorkflowWizard';
 import { WizardContainer } from '../components/WizardContainer';
 
 const WorkflowCreation = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [workflowMode, setWorkflowMode] = useState<'selection' | 'simple' | 'advanced'>('selection');
+
+  // Check URL params on mount
+  useEffect(() => {
+    const type = searchParams.get('type');
+    if (type === 'simple' || type === 'advanced') {
+      setWorkflowMode(type);
+    }
+  }, [searchParams]);
 
   const handleWorkflowTypeSelect = (type: 'simple' | 'advanced') => {
     setWorkflowMode(type);
