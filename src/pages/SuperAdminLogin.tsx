@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Eye, EyeOff, Shield } from 'lucide-react';
+import { Eye, EyeOff, Shield, ArrowLeft } from 'lucide-react';
 
 const SuperAdminLogin = () => {
   const [username, setUsername] = useState('');
@@ -26,13 +26,21 @@ const SuperAdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 pl-8 md:pl-16" style={{
+    <div className="min-h-screen flex items-center justify-center p-4 pl-8 md:pl-16 relative" style={{
       backgroundImage: 'url(/lovable-uploads/6f96d7c5-807b-44ca-89c7-1c7492ab35bc.png)',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
       backgroundAttachment: 'fixed'
     }}>
+      {/* Floating Back Button */}
+      <Link
+        to="/"
+        className="fixed top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-gray-900 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span className="text-sm font-medium">Back to Home</span>
+      </Link>
       <div className="w-[30%] ml-auto mr-16 min-w-[440px]">
         <Card className="bg-white shadow-2xl border-2 border-white rounded-3xl relative overflow-hidden py-8" style={{
           backgroundImage: `url(/lovable-uploads/840626b0-2ee3-4c74-be74-32f412aad530.png)`,
@@ -112,13 +120,7 @@ const SuperAdminLogin = () => {
                 )}
               </Button>
               
-              <div className="flex items-center justify-between mt-4">
-                <Link
-                  to="/"
-                  className="text-gray-600 hover:text-gray-700 text-sm font-medium"
-                >
-                  ← Back to Home
-                </Link>
+              <div className="text-center mt-4">
                 <Link
                   to="/super-admin/forgot-password"
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium"

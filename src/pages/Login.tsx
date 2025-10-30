@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import "@/utils/amplifyConfig";
 
 const Login = () => {
@@ -69,7 +69,7 @@ const Login = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 pl-8 md:pl-16"
+      className="min-h-screen flex items-center justify-center p-4 pl-8 md:pl-16 relative"
       style={{
         backgroundImage:
           "url(/lovable-uploads/6f96d7c5-807b-44ca-89c7-1c7492ab35bc.png)",
@@ -79,6 +79,14 @@ const Login = () => {
         backgroundAttachment: "fixed",
       }}
     >
+      {/* Floating Back Button */}
+      <Link
+        to="/"
+        className="fixed top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-gray-900 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span className="text-sm font-medium">Back to Home</span>
+      </Link>
       <div className="w-[30%] ml-auto mr-16 min-w-[440px]">
         <Card
           className="bg-white shadow-2xl border-2 border-white rounded-3xl relative overflow-hidden py-8"
