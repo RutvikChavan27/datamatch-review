@@ -2,8 +2,8 @@ import { CognitoUserPool } from 'amazon-cognito-identity-js';
 import CryptoJS from 'crypto-js';
 
 const poolData = {
-  UserPoolId: 'us-east-1_HpW10zP5i',
-  ClientId: '74l6el752u2hcu63a8nv75lr4g',
+  UserPoolId: '',  // Removed for static login
+  ClientId: '',    // Removed for static login
 };
 
 export const userPool = new CognitoUserPool(poolData);

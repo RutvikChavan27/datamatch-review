@@ -32,10 +32,28 @@ const OTPAuth = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!otp) return;
-
+    
     setLoading(true);
-    setError("");
+    setError('');
 
+    // Static OTP verification - accepts any OTP
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Store user session (static)
+      sessionStorage.setItem("isAuthenticated", "true");
+      
+      // Navigate to workspace
+      navigate('/workspace', { replace: true });
+    } catch (err: any) {
+      console.error('OTP verification error:', err);
+      setError('An error occurred during verification');
+    } finally {
+      setLoading(false);
+    }
+
+    /* COGNITO OTP VERIFICATION - COMMENTED OUT
     try {
       const { isSignedIn } = await confirmSignIn({
         challengeResponse: otp,
@@ -43,18 +61,19 @@ const OTPAuth = () => {
 
       if (isSignedIn) {
         await checkAuth();
-        navigate("/workspace", { replace: true });
+        navigate('/dashboard', { replace: true });
       }
     } catch (err: any) {
-      console.error("OTP verification error:", err);
+      console.error('OTP verification error:', err);
       setError(
-        err.name === "CodeMismatchException"
-          ? "Invalid OTP code. Please try again."
-          : err.message || "An error occurred during verification"
+        err.name === 'CodeMismatchException'
+          ? 'Invalid OTP code. Please try again.'
+          : err.message || 'An error occurred during verification'
       );
     } finally {
       setLoading(false);
     }
+    */
   };
 
   const handleResendOTP = () => {

@@ -25,6 +25,25 @@ const Login = () => {
     setLoading(true);
     setError("");
 
+    // Static login - accepts any credentials
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Store user session (static)
+      sessionStorage.setItem("isAuthenticated", "true");
+      sessionStorage.setItem("username", username);
+      
+      // Navigate to workspace
+      navigate("/workspace", { replace: true });
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError("An error occurred during login");
+    } finally {
+      setLoading(false);
+    }
+
+    /* COGNITO LOGIN CODE - COMMENTED OUT
     try {
       const { isSignedIn, nextStep } = await signIn({
         username,
@@ -65,6 +84,7 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
+    */
   };
 
   return (

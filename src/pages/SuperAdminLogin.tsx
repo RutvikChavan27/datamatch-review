@@ -18,11 +18,24 @@ const SuperAdminLogin = () => {
     if (!username || !password) return;
     
     setLoading(true);
-    // Simulate API call delay
-    setTimeout(() => {
+    
+    // Static login - accepts any credentials
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Store user session (static)
+      sessionStorage.setItem("isAuthenticated", "true");
+      sessionStorage.setItem("username", username);
+      sessionStorage.setItem("userRole", "super-admin");
+      
+      // Navigate to super admin dashboard
+      navigate('/super-admin/dashboard', { replace: true });
+    } catch (err: any) {
+      console.error("Login error:", err);
+    } finally {
       setLoading(false);
-      navigate('/super-admin/otp-auth', { state: { username } });
-    }, 1500);
+    }
   };
 
   return (

@@ -41,8 +41,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Clear localStorage
       localStorage.clear();
 
-      // Sign out from Cognito
-      await signOut();
+      // Sign out from Cognito (commented out for static login)
+      // await signOut();
 
       // Show error message if provided
       if (errorMessage) {
@@ -60,6 +60,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkAuth = async () => {
     try {
+      // Static authentication check
+      const isAuth = sessionStorage.getItem('isAuthenticated') === 'true';
+      const username = sessionStorage.getItem('username') || '';
+      
+      if (isAuth && username) {
+        const userWithAttributes: User = { 
+          username,
+          attributes: {
+            email: username,
+          }
+        };
+        setUser(userWithAttributes);
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+
+      /* COGNITO AUTH CHECK - COMMENTED OUT
       const currentUser = await getCurrentUser();
       const userAttributes = await fetchUserAttributes();
       
@@ -69,19 +88,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       setUser(userWithAttributes);
       setIsAuthenticated(true);
+      */
     } catch (err) {
       console.error('Auth check error:', err);
       setUser(null);
       setIsAuthenticated(false);
-
-      // If it's an auth error, logout
-      if (
-        (err as any).name === 'NotAuthorizedException' ||
-        (err as any).name === 'UserNotConfirmedException'
-      ) {
-        await logout('Authentication failed. Please log in again.');
-        return;
-      }
     } finally {
       setLoading(false);
     }
