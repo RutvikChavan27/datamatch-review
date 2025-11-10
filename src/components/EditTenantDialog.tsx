@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Copy, Palette, GitBranch, ClipboardList, FileCheck, Info } from 'lucide-react';
+import { Upload, Copy, Palette, GitBranch, ClipboardList, FileCheck, Info, Lock, FolderOpen, HardDrive, BarChart3, Check, CalendarIcon, Pencil, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format, addDays, addMonths, addYears } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface Tenant {
   id: number;
@@ -15,6 +19,7 @@ interface Tenant {
   status: string;
   isActive: boolean;
   logo: string;
+  expiryDate?: string;
 }
 
 interface EditTenantDialogProps {
@@ -35,12 +40,22 @@ const EditTenantDialog: React.FC<EditTenantDialogProps> = ({ open, onOpenChange,
   const [selectedLogo, setSelectedLogo] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [selectedModules, setSelectedModules] = useState<string[]>(['workflows', 'po-requests', 'document-matching']);
+  const [tenantExpiryDate, setTenantExpiryDate] = useState<Date | undefined>();
+  const [moduleExpiryDates, setModuleExpiryDates] = useState<Record<string, Date | undefined>>({});
+  const [tenantDatePickerOpen, setTenantDatePickerOpen] = useState(false);
+  const [tempTenantDate, setTempTenantDate] = useState<Date | undefined>();
+  const [modulePickerOpen, setModulePickerOpen] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (tenant) {
       setTenantName(tenant.name);
       setUrlSlug(tenant.shortName.toLowerCase());
       setLogoPreview(tenant.logo);
+      if (tenant.expiryDate) {
+        const expiryDate = new Date(tenant.expiryDate);
+        setTenantExpiryDate(expiryDate);
+        setTempTenantDate(expiryDate);
+      }
     }
   }, [tenant]);
 
@@ -86,6 +101,41 @@ const EditTenantDialog: React.FC<EditTenantDialogProps> = ({ open, onOpenChange,
     );
   };
 
+  const setQuickExpiryDate = (type: '3m' | '6m' | '1y') => {
+    const now = new Date();
+    if (type === '3m') {
+      setTempTenantDate(addMonths(now, 3));
+    } else if (type === '6m') {
+      setTempTenantDate(addMonths(now, 6));
+    } else if (type === '1y') {
+      setTempTenantDate(addYears(now, 1));
+    }
+  };
+
+  const handleTenantDateConfirm = () => {
+    setTenantExpiryDate(tempTenantDate);
+    setTenantDatePickerOpen(false);
+  };
+
+  const handleTenantDateCancel = () => {
+    setTempTenantDate(tenantExpiryDate);
+    setTenantDatePickerOpen(false);
+  };
+
+  const setModuleExpiryDate = (moduleId: string, date: Date | undefined) => {
+    setModuleExpiryDates(prev => ({
+      ...prev,
+      [moduleId]: date
+    }));
+  };
+
+  const toggleModulePicker = (moduleId: string, open: boolean) => {
+    setModulePickerOpen(prev => ({
+      ...prev,
+      [moduleId]: open
+    }));
+  };
+
   const triggerFileInput = () => {
     document.getElementById('edit-logo-upload')?.click();
   };
@@ -95,7 +145,8 @@ const EditTenantDialog: React.FC<EditTenantDialogProps> = ({ open, onOpenChange,
       onSave({
         ...tenant,
         name: tenantName,
-        shortName: urlSlug.toUpperCase().slice(0, 4)
+        shortName: urlSlug.toUpperCase().slice(0, 4),
+        expiryDate: tenantExpiryDate ? tenantExpiryDate.toISOString().split('T')[0] : undefined
       });
     }
     onOpenChange(false);
@@ -103,7 +154,7 @@ const EditTenantDialog: React.FC<EditTenantDialogProps> = ({ open, onOpenChange,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-5xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Edit Tenant</DialogTitle>
           <DialogDescription>
@@ -113,20 +164,107 @@ const EditTenantDialog: React.FC<EditTenantDialogProps> = ({ open, onOpenChange,
         
         <ScrollArea className="max-h-[calc(90vh-180px)] pr-4">
           <div className="space-y-6 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left Column - Form Fields */}
-              <div className="space-y-6">
-                {/* Tenant Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="tenantName" className="text-sm font-medium">
-                    Tenant Name <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="tenantName"
-                    value={tenantName}
-                    onChange={(e) => setTenantName(e.target.value)}
-                    placeholder="Please Enter Tenant Name"
-                  />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Left Two Columns - Form Fields */}
+              <div className="space-y-6 md:col-span-2">
+                {/* Tenant Name and Expiry Date Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Tenant Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="tenantName" className="text-sm font-medium">
+                      Tenant Name <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="tenantName"
+                      value={tenantName}
+                      onChange={(e) => setTenantName(e.target.value)}
+                      placeholder="Please Enter Tenant Name"
+                    />
+                  </div>
+
+                  {/* Expiry Date */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      Expiry Date <span className="text-destructive">*</span>
+                    </Label>
+                    <Popover open={tenantDatePickerOpen} onOpenChange={(open) => {
+                      setTenantDatePickerOpen(open);
+                      if (open) {
+                        setTempTenantDate(tenantExpiryDate);
+                      }
+                    }}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-between text-left font-normal",
+                            !tenantExpiryDate && "text-muted-foreground"
+                          )}
+                        >
+                          {tenantExpiryDate ? format(tenantExpiryDate, "PPP") : <span>Pick a date</span>}
+                          <CalendarIcon className="ml-2 h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <div className="p-3 border-b">
+                          <Label className="text-xs font-medium mb-2 block">Quick Select</Label>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setQuickExpiryDate('3m')}
+                              className="flex-1"
+                            >
+                              3 Months
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setQuickExpiryDate('6m')}
+                              className="flex-1"
+                            >
+                              6 Months
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setQuickExpiryDate('1y')}
+                              className="flex-1"
+                            >
+                              1 Year
+                            </Button>
+                          </div>
+                        </div>
+                        <Calendar
+                          mode="single"
+                          selected={tempTenantDate}
+                          onSelect={setTempTenantDate}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                        <div className="p-3 border-t space-y-3">
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleTenantDateCancel}
+                              className="flex-1"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={handleTenantDateConfirm}
+                              className="flex-1"
+                            >
+                              Okay
+                            </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
 
                 {/* URL Name */}
@@ -159,8 +297,8 @@ const EditTenantDialog: React.FC<EditTenantDialogProps> = ({ open, onOpenChange,
                 </div>
               </div>
 
-              {/* Right Column - Tenant Logo */}
-              <div className="space-y-2 h-full flex flex-col">
+              {/* Third Column - Tenant Logo */}
+              <div className="space-y-2 md:col-span-1">
                 <Label className="text-sm font-medium">
                   Tenant Logo
                 </Label>
@@ -172,10 +310,10 @@ const EditTenantDialog: React.FC<EditTenantDialogProps> = ({ open, onOpenChange,
                   className="hidden"
                 />
                 <Card 
-                  className="border-2 border-dashed border-border hover:border-primary/50 transition-colors flex-1 cursor-pointer"
+                  className="border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer h-[calc(100%-2rem)]"
                   onClick={triggerFileInput}
                 >
-                  <CardContent className="p-8 text-center h-full flex items-center justify-center">
+                  <CardContent className="p-6 text-center flex items-center justify-center h-full">
                     {logoPreview ? (
                       <div className="flex flex-col items-center justify-center w-full h-full relative">
                         <div className="relative mb-3">
@@ -185,33 +323,50 @@ const EditTenantDialog: React.FC<EditTenantDialogProps> = ({ open, onOpenChange,
                             className="max-h-24 max-w-24 object-contain rounded"
                           />
                         </div>
-                        <p className="text-sm font-medium text-foreground mb-1">{selectedLogo?.name || 'Current Logo'}</p>
                         {selectedLogo && (
                           <p className="text-xs text-muted-foreground mb-3">
                             {((selectedLogo?.size || 0) / 1024 / 1024).toFixed(2)} MB
                           </p>
                         )}
                         <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              triggerFileInput();
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveLogo();
-                            }}
-                          >
-                            Remove
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    triggerFileInput();
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Edit</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveLogo();
+                                  }}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Remove</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </div>
                     ) : (
@@ -411,60 +566,312 @@ const EditTenantDialog: React.FC<EditTenantDialogProps> = ({ open, onOpenChange,
 
             {/* Module Configuration */}
             <div className="space-y-4">
-              <Label className="text-lg font-semibold text-foreground">Module Configuration</Label>
+              <div className="flex items-center gap-2">
+                <Label className="text-lg font-semibold text-foreground">Module Configuration</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Must be within tenant expiry: {tenantExpiryDate ? format(tenantExpiryDate, 'MMMM do, yyyy') : 'Not set'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-3">
                 {/* Workflows Module */}
                 <Card 
-                  className={`cursor-pointer transition-all duration-200 rounded-2xl shadow-lg backdrop-blur-sm ${
-                    selectedModules.includes('workflows') ? 'border-2 border-primary shadow-xl' : 'border hover:shadow-xl'
+                  className={`transition-all duration-200 border ${
+                    selectedModules.includes('workflows') ? 'bg-primary/5' : ''
                   }`}
-                  onClick={() => toggleModule('workflows')}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex flex-col items-center space-y-3">
-                      <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center">
-                        <GitBranch className="h-6 w-6 text-blue-500" />
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <GitBranch className="h-5 w-5 text-blue-500" />
                       </div>
-                      <h3 className="font-medium text-foreground">Workflows</h3>
-                      <p className="text-xs text-muted-foreground text-center">Automate document processing workflows</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-foreground">Workflows</h3>
+                          {selectedModules.includes('workflows') && (
+                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                              <Check className="h-3 w-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">Manage workflow tasks, notification channels, and reminder settings</p>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        {selectedModules.includes('workflows') && (
+                          <Popover open={modulePickerOpen['workflows']} onOpenChange={(open) => toggleModulePicker('workflows', open)}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="justify-between"
+                              >
+                                {moduleExpiryDates['workflows'] ? format(moduleExpiryDates['workflows'], "MMM dd, yyyy") : 'Expiry Date'}
+                                <CalendarIcon className="ml-2 h-4 w-4" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={moduleExpiryDates['workflows']}
+                                onSelect={(date) => setModuleExpiryDate('workflows', date)}
+                                disabled={(date) => date < new Date() || (tenantExpiryDate && date > tenantExpiryDate)}
+                                initialFocus
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                              <div className="p-3 border-t flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => toggleModulePicker('workflows', false)}
+                                  className="flex-1"
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => toggleModulePicker('workflows', false)}
+                                  className="flex-1"
+                                >
+                                  Okay
+                                </Button>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                        <Button
+                          size="sm"
+                          variant={selectedModules.includes('workflows') ? 'default' : 'outline'}
+                          onClick={() => toggleModule('workflows')}
+                        >
+                          {selectedModules.includes('workflows') ? 'Selected' : 'Select'}
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* PO Requests Module */}
                 <Card 
-                  className={`cursor-pointer transition-all duration-200 rounded-2xl shadow-lg backdrop-blur-sm ${
-                    selectedModules.includes('po-requests') ? 'border-2 border-primary shadow-xl' : 'border hover:shadow-xl'
+                  className={`transition-all duration-200 border ${
+                    selectedModules.includes('po-requests') ? 'bg-primary/5' : ''
                   }`}
-                  onClick={() => toggleModule('po-requests')}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex flex-col items-center space-y-3">
-                      <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center">
-                        <ClipboardList className="h-6 w-6 text-green-500" />
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
+                        <ClipboardList className="h-5 w-5 text-green-500" />
                       </div>
-                      <h3 className="font-medium text-foreground">PO Requests</h3>
-                      <p className="text-xs text-muted-foreground text-center">Manage purchase order requests</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-foreground">PO Requests</h3>
+                          {selectedModules.includes('po-requests') && (
+                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                              <Check className="h-3 w-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">Configure PO fields, vendors, departments, line items, and cost centers</p>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        {selectedModules.includes('po-requests') && (
+                          <Popover open={modulePickerOpen['po-requests']} onOpenChange={(open) => toggleModulePicker('po-requests', open)}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="justify-between"
+                              >
+                                {moduleExpiryDates['po-requests'] ? format(moduleExpiryDates['po-requests'], "MMM dd, yyyy") : 'Expiry Date'}
+                                <CalendarIcon className="ml-2 h-4 w-4" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={moduleExpiryDates['po-requests']}
+                                onSelect={(date) => setModuleExpiryDate('po-requests', date)}
+                                disabled={(date) => date < new Date() || (tenantExpiryDate && date > tenantExpiryDate)}
+                                initialFocus
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                              <div className="p-3 border-t flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => toggleModulePicker('po-requests', false)}
+                                  className="flex-1"
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => toggleModulePicker('po-requests', false)}
+                                  className="flex-1"
+                                >
+                                  Okay
+                                </Button>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                        <Button
+                          size="sm"
+                          variant={selectedModules.includes('po-requests') ? 'default' : 'outline'}
+                          onClick={() => toggleModule('po-requests')}
+                        >
+                          {selectedModules.includes('po-requests') ? 'Selected' : 'Select'}
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Document Matching Module */}
                 <Card 
-                  className={`cursor-pointer transition-all duration-200 rounded-2xl shadow-lg backdrop-blur-sm ${
-                    selectedModules.includes('document-matching') ? 'border-2 border-primary shadow-xl' : 'border hover:shadow-xl'
+                  className={`transition-all duration-200 border ${
+                    selectedModules.includes('document-matching') ? 'bg-primary/5' : ''
                   }`}
-                  onClick={() => toggleModule('document-matching')}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex flex-col items-center space-y-3">
-                      <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center">
-                        <FileCheck className="h-6 w-6 text-purple-500" />
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0">
+                        <FileCheck className="h-5 w-5 text-purple-500" />
                       </div>
-                      <h3 className="font-medium text-foreground">Document Matching</h3>
-                      <p className="text-xs text-muted-foreground text-center">Match and validate documents</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-foreground">Document Matching</h3>
+                          {selectedModules.includes('document-matching') && (
+                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                              <Check className="h-3 w-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">Configure variance thresholds for automatic document matching</p>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        {selectedModules.includes('document-matching') && (
+                          <Popover open={modulePickerOpen['document-matching']} onOpenChange={(open) => toggleModulePicker('document-matching', open)}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="justify-between"
+                              >
+                                {moduleExpiryDates['document-matching'] ? format(moduleExpiryDates['document-matching'], "MMM dd, yyyy") : 'Expiry Date'}
+                                <CalendarIcon className="ml-2 h-4 w-4" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={moduleExpiryDates['document-matching']}
+                                onSelect={(date) => setModuleExpiryDate('document-matching', date)}
+                                disabled={(date) => date < new Date() || (tenantExpiryDate && date > tenantExpiryDate)}
+                                initialFocus
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                              <div className="p-3 border-t flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => toggleModulePicker('document-matching', false)}
+                                  className="flex-1"
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => toggleModulePicker('document-matching', false)}
+                                  className="flex-1"
+                                >
+                                  Okay
+                                </Button>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                        <Button
+                          size="sm"
+                          variant={selectedModules.includes('document-matching') ? 'default' : 'outline'}
+                          onClick={() => toggleModule('document-matching')}
+                        >
+                          {selectedModules.includes('document-matching') ? 'Selected' : 'Select'}
+                        </Button>
+                      </div>
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* Workspace Module - Default/Locked */}
+                <Card className="border bg-muted/20 opacity-75">
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <FolderOpen className="h-5 w-5 text-gray-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-foreground">Workspace</h3>
+                      <p className="text-sm text-muted-foreground">Default module for document workspace and collaboration</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled
+                      className="flex-shrink-0"
+                    >
+                      <Lock className="h-4 w-4 mr-1" />
+                      Default
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Storage Module - Default/Locked */}
+                <Card className="border bg-muted/20 opacity-75">
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <HardDrive className="h-5 w-5 text-gray-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-foreground">Storage</h3>
+                      <p className="text-sm text-muted-foreground">Default module for document storage and management</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled
+                      className="flex-shrink-0"
+                    >
+                      <Lock className="h-4 w-4 mr-1" />
+                      Default
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Reports Module - Default/Locked */}
+                <Card className="border bg-muted/20 opacity-75">
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <BarChart3 className="h-5 w-5 text-gray-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-foreground">Reports</h3>
+                      <p className="text-sm text-muted-foreground">Default module for analytics and reporting features</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled
+                      className="flex-shrink-0"
+                    >
+                      <Lock className="h-4 w-4 mr-1" />
+                      Default
+                    </Button>
                   </CardContent>
                 </Card>
               </div>

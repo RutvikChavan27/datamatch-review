@@ -53,6 +53,8 @@ import Tenants from "../components/Tenants";
 import AddTenantWizard from "../components/AddTenantWizard";
 import SuperAdminReportsAnalytics from "../components/SuperAdminReportsAnalytics";
 import Audits from "../components/Audits";
+import FormCreationPage from "./FormCreationPage";
+import TenantUsersGroups from "@/components/TenantUsersGroups";
 
 // Helper hook to determine if we need full width (no padding)
 function useFullWidth() {
@@ -115,7 +117,10 @@ const Index = () => {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/super-admin/login" element={<SuperAdminLogin />} />
           <Route path="/super-admin/otp-auth" element={<SuperAdminOTPAuth />} />
-          <Route path="/super-admin/forgot-password" element={<ForgotPassword />} />
+          <Route
+            path="/super-admin/forgot-password"
+            element={<ForgotPassword />}
+          />
         </Routes>
       </div>
     );
@@ -225,15 +230,36 @@ const Index = () => {
                 path="/settings/po-request"
                 element={<PORequestSettings />}
               />
+              <Route
+                path="/settings/storage/form/create"
+                element={<FormCreationPage />}
+              />
+              <Route
+                path="/settings/storage/form/edit"
+                element={<FormCreationPage />}
+              />
               <Route path="/profile" element={<Profile />} />
-              
+
               {/* Super Admin Routes */}
-              <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
+              <Route
+                path="/super-admin/dashboard"
+                element={<SuperAdminDashboard />}
+              />
               <Route path="/super-admin/tenants" element={<Tenants />} />
-              <Route path="/super-admin/tenants/add" element={<AddTenantWizard />} />
-              <Route path="/super-admin/reports" element={<SuperAdminReportsAnalytics />} />
+              <Route
+                path="/super-admin/tenants/add"
+                element={<AddTenantWizard />}
+              />
+              <Route
+                path="/super-admin/tenants/:tenantId/users-groups"
+                element={<TenantUsersGroups />}
+              />
+              <Route
+                path="/super-admin/reports"
+                element={<SuperAdminReportsAnalytics />}
+              />
               <Route path="/super-admin/audits" element={<Audits />} />
-              
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>

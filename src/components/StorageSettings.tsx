@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +41,17 @@ interface IndexForm {
 }
 
 const StorageSettings = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('index-fields');
+  
+  // Check if we should return to a specific tab
+  React.useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string[]>(['all']);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -63,6 +73,10 @@ const StorageSettings = () => {
   const [fieldTypeError, setFieldTypeError] = useState('');
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [selectedField, setSelectedField] = useState<IndexField | null>(null);
+  
+  // Edit Field Modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingField, setEditingField] = useState<IndexField | null>(null);
   
   // Create Form Modal state
   const [showCreateFormModal, setShowCreateFormModal] = useState(false);
@@ -190,6 +204,17 @@ const StorageSettings = () => {
     { id: 'multiselect', label: 'Multi-Select', description: 'Multiple selections', icon: ChevronDown }
   ];
 
+  // Handle edit field
+  const handleEditField = (field: IndexField) => {
+    setEditingField(field);
+    setDisplayName(field.displayName);
+    setSelectedFieldType(field.type.toLowerCase());
+    setIsRequired(field.required === 'Yes');
+    setDefaultValue('');
+    setHelperText(field.helpText);
+    setShowEditModal(true);
+  };
+
   // Handle delete field
   const handleDeleteField = (field: IndexField) => {
     if (field.status.toLowerCase() === 'active') {
@@ -219,12 +244,16 @@ const StorageSettings = () => {
       return;
     }
     
-    // Here you would typically save to backend
-    console.log('Saving form:', {
-      formName,
-      formDescription
+    // Navigate to form creation page with form data
+    navigate('/settings/storage/form/create', {
+      state: {
+        formName,
+        formDescription,
+        returnTab: 'index-forms'
+      }
     });
     
+    // Clean up modal state
     setShowCreateFormModal(false);
     setFormName('');
     setFormDescription('');
@@ -265,6 +294,52 @@ const StorageSettings = () => {
       helperText
     });
     setShowCreateModal(false);
+    // Reset form
+    setDisplayName('Customer Name');
+    setSelectedFieldType('text');
+    setIsRequired(false);
+    setDefaultValue('');
+    setHelperText('');
+  };
+
+  // Handle edit modal save
+  const handleSaveEditField = () => {
+    // Reset errors
+    setDisplayNameError('');
+    setFieldTypeError('');
+    
+    let hasErrors = false;
+    
+    // Validate Display Name
+    if (!displayName.trim()) {
+      setDisplayNameError('Display Name is required');
+      hasErrors = true;
+    }
+    
+    // Validate Field Type
+    if (!selectedFieldType) {
+      setFieldTypeError('Field Type is required');
+      hasErrors = true;
+    }
+    
+    // If there are errors, don't proceed
+    if (hasErrors) {
+      return;
+    }
+    
+    // Here you would typically update the backend
+    console.log('Updating field:', {
+      originalField: editingField,
+      displayName,
+      fieldName: generateFieldName(displayName),
+      fieldType: selectedFieldType,
+      required: isRequired,
+      defaultValue,
+      helperText
+    });
+    
+    setShowEditModal(false);
+    setEditingField(null);
     // Reset form
     setDisplayName('Customer Name');
     setSelectedFieldType('text');
@@ -664,7 +739,12 @@ const StorageSettings = () => {
                           <div className="flex items-center gap-2">
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => handleEditField(field)}
+                                >
                                   <Edit2 className="w-4 h-4" />
                                 </Button>
                               </TooltipTrigger>
@@ -834,7 +914,19 @@ const StorageSettings = () => {
                           <div className="flex items-center gap-1">
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => navigate('/settings/storage/form/edit', { 
+                                    state: { 
+                                      formName: form.formName, 
+                                      formDescription: form.description,
+                                      isEditMode: true,
+                                      returnTab: 'index-forms'
+                                    } 
+                                  })}
+                                >
                                   <Edit2 className="w-4 h-4" />
                                 </Button>
                               </TooltipTrigger>
@@ -1628,6 +1720,150 @@ const StorageSettings = () => {
               disabled={!formName.trim()}
             >
               Create Form
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Index Field Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Edit Index Field</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Input Fields */}
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="edit-display-name" className="text-sm font-medium">
+                  Display Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="edit-display-name"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Enter display name"
+                  className={`w-full ${displayNameError ? 'border-red-500' : ''}`}
+                />
+                {displayNameError && (
+                  <p className="text-xs text-red-500">{displayNameError}</p>
+                )}
+              </div>
+              
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="edit-field-name" className="text-sm font-medium">
+                  Field Name
+                </Label>
+                <Input
+                  id="edit-field-name"
+                  value={generateFieldName(displayName)}
+                  disabled
+                  className="w-full bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Note: It is derived automatically from the Display Name.
+                </p>
+              </div>
+            </div>
+            
+            {/* Field Type Selection */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">
+                Field Type <span className="text-red-500">*</span>
+              </Label>
+              <div className="grid grid-cols-3 gap-3">
+                {fieldTypeOptions.map((option) => {
+                  const IconComponent = option.icon;
+                  return (
+                    <div
+                      key={option.id}
+                      className={`
+                        relative p-3 rounded-lg border cursor-pointer transition-all
+                        ${selectedFieldType === option.id 
+                          ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
+                          : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                        }
+                      `}
+                      onClick={() => setSelectedFieldType(option.id)}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <IconComponent className="h-4 w-4" />
+                        <span className="text-sm font-medium">{option.label}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{option.description}</p>
+                      {selectedFieldType === option.id && (
+                        <div className="absolute top-2 right-2">
+                          <CheckCircle className="h-4 w-4 text-primary" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {fieldTypeError && (
+                <p className="text-xs text-red-500">{fieldTypeError}</p>
+              )}
+            </div>
+            
+            {/* Additional Configurations */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="edit-required"
+                  checked={isRequired}
+                  onCheckedChange={(checked) => setIsRequired(checked === true)}
+                />
+                <Label htmlFor="edit-required" className="text-sm font-medium">
+                  Required Field
+                </Label>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-default-value" className="text-sm font-medium">
+                  Default Value
+                </Label>
+                <Input
+                  id="edit-default-value"
+                  value={defaultValue}
+                  onChange={(e) => setDefaultValue(e.target.value)}
+                  placeholder="Enter default value (optional)"
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-helper-text" className="text-sm font-medium">
+                  Helper Text
+                </Label>
+                <Textarea
+                  id="edit-helper-text"
+                  value={helperText}
+                  onChange={(e) => setHelperText(e.target.value)}
+                  placeholder="Non-mandatory subtext for guidance"
+                  className="w-full min-h-[80px]"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditModal(false);
+                setEditingField(null);
+                setDisplayName('Customer Name');
+                setSelectedFieldType('text');
+                setIsRequired(false);
+                setDefaultValue('');
+                setHelperText('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEditField}>
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
